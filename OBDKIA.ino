@@ -223,7 +223,12 @@ void setup() {
 
 
 void loop(){
-  debug_serial2(); //OBD-BT
+  
+  /*
+  * Comment to run loop. Un-comment to run terminal mode:
+  */ 
+  
+  //debug_serial2(); //OBD-BT   
   //debug_serial1();
   //gprs.serialDebug();
 
