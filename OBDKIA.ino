@@ -30,8 +30,9 @@
  ****** Runtime Variables ******
  ******************************/
 
-unsigned long start_millis = 0;     //to measure time elapsed getting OBD data
-unsigned long stop_millis = 0;      //to measure time elapsed getting OBD data
+unsigned long start_millis = 0;           //to measure time elapsed getting OBD data
+unsigned long stop_millis = 0;            //to measure time elapsed getting OBD data
+int           time_between_loops = 5000;  //total time elapsed on each iteration in [ms]
 
 #define baud_serial0 9600           //Serial inncluded in arduino
 //#define baud_serial1 9600           //SIM
@@ -50,8 +51,13 @@ byte    inData;                 //to parse data received from OBD
 char    inChar;                 //to read OBD's response char-wise
 String  WorkingString="";       //to cut substrings from raw_OBD_response
 long    A;                      //to save numeric data gotten from control unit's responses
-float   rpm;                    //to save rpm data after applying formula
-float   veloc;                  //to save velocity data after applying formula
+//long    B;
+//long    C;
+
+float   temp;              
+float   rpm;               
+float   veloc;             
+
 
 /*****************************************
  ******** SIM and Cloud Variables ********
@@ -67,9 +73,18 @@ GPRS gprs;                                //SIM808 object
 //boolean connectivity = false;             //to attempt connection to the cloud or skip and work oflin
 */
 
+/********************************
+ *********** OBD PIDs ***********
+ ********************************/
 
+#define pids_rpm "010C"
 
 void setup() {
+  /*****************************************
+   *****************************************
+   ****************  SETUP  ****************
+   *****************************************
+   *****************************************/
   
   /*** Begin serial: */
   Serial.begin(baud_serial0);       
@@ -97,7 +112,6 @@ void setup() {
   delay(1000);
   //char* IP = gprs.getIPAddress();
 
-
   Serial.println("2G Initialized.");
   //Serial.println(IP);
   
@@ -110,161 +124,123 @@ void setup() {
  /*********************
  *** Initialize ELM327
  *********************/  
-  
-  //Reset and expect version as response (ELM327 v2.1):
-  BTOBD_serial.println("atz");
+ 
+  BTOBD_serial.println("atz");          //Reset
   delay(500);
-  while (BTOBD_serial.available()){
-    Serial.write(BTOBD_serial.read());
-  }
-  delay(500);
-  //Serial.println("\n");
+  read_elm327_response()
+  Serial.println(raw_OBD_response);
   
-  
-  //Automatically choose OBD protocol:
-  BTOBD_serial.println("at sp 0");
+  BTOBD_serial.println("at sp 0");      //Automatically choose OBD protocol
   delay(300);
-  while (BTOBD_serial.available()){
-    Serial.write(BTOBD_serial.read());
-  }
-  
-  BTOBD_serial.println("at dp");
-  delay(300);
-  while (BTOBD_serial.available()){
-    Serial.write(BTOBD_serial.read());
-  }
-  Serial.println("\n"); 
+  read_elm327_response()
+  Serial.println(raw_OBD_response);
+ 
+  BTOBD_serial.println("at dp");        //Describe Protocol
+  delay(100);
+  read_elm327_response()
+  Serial.println(raw_OBD_response);
 
-  BTOBD_serial.println("at dpn");
-  delay(300);
-  while (BTOBD_serial.available()){
-    Serial.write(BTOBD_serial.read());
-  }
-  Serial.println("\n"); 
-
-  //Start sensors:
+  BTOBD_serial.println("at dpn");       //Describe Protocol by Number (check this description please)
+  delay(100);
+  read_elm327_response()
+  Serial.println(raw_OBD_response);
   
-  Serial.println("\n");
-  BTOBD_serial.println("01 00");
-  delay(3000);
-  while (BTOBD_serial.available()){
-    //Serial.write(BTOBD_serial.read());   //Debug mode
-    BTOBD_serial.read();                 //Silent mode.
-  } 
-  Serial.println("ELM327 Initialized.");
-
-/*
-  Serial.println("\n");
-  BTOBD_serial.println("01 05");
-  delay(300);
-  while (BTOBD_serial.available()){
-    Serial.write(BTOBD_serial.read());
-  } 
-  Serial.println("Temp. Sensor initialized.");
-*/
-
-  //Serial.println("\n");
-  BTOBD_serial.println("01 0C");
-  delay(300);
-  while (BTOBD_serial.available()){
-    Serial.write(BTOBD_serial.read());
-  } 
-  Serial.println("Engine RPM sensor initialized.");
-
+  BTOBD_serial.println("01 00");        //Receive Mode-01 Available Sensors List
+  delay(1000);
+  read_elm327_response()
+  Serial.println(raw_OBD_response);
   
-  BTOBD_serial.println("01 0D");
+  BTOBD_serial.println("01 05");        //Request PID 05 (Coolant Temperature)
   delay(300);
-  while (BTOBD_serial.available()){
-    Serial.write(BTOBD_serial.read());
-  } 
-  Serial.println("Vehicle Speed sensor initialized");
-  Serial.println("\n");
+  read_elm327_response()
+  Serial.println(raw_OBD_response);
   
+  BTOBD_serial.println("01 0C");        //Request PID 0C (Engine RPM)
+  delay(300);
+  read_elm327_response()
+  Serial.println(raw_OBD_response);
+  
+  BTOBD_serial.println("01 0D");        //Request PID 0D (Vehicle Speed)
+  delay(300);
+  read_elm327_response()
+  Serial.println(raw_OBD_response);
   
 }
 
-
-/**
- * 
- * 
- * 
- *  LOOP
- * 
- * 
- */
-
-
 void loop(){
+/****************************************
+ ****************************************
+ ****************  LOOP  ****************
+ ****************************************
+ ****************************************/
   
-  /*
-  * Comment to run loop. Un-comment to run terminal mode:
-  */ 
-  
-  //debug_serial2(); //OBD-BT   
-  //debug_serial1();
-  //gprs.serialDebug();
+  //debug_serial2();      //Debugger for OBD-BT serial interface
+  //debug_serial1();      //Debugger for SIM800L serial interface
+  //gprs.serialDebug();   //Library-native debugger for SIM800L serial interface
 
-  start_millis = millis();
+  start_millis = millis();    //Register initial timestamp
 
-  Serial.print("\n");
-  Serial.print(start_millis);
+  Serial.print("\n");         //Start new line (do not use println in any print of the loop)
+  Serial.print(start_millis); 
   Serial.print("\t[ms]\t");
   
-/**
- * Get data from sensors
- */
-
-
-
-  //Get Temperature:
-  BTOBD_serial.println("0105");  //Send Temp PID
-  //BTOBD_serial.flush();
-  delay(380);
-  read_serial2();             //Receive response
-  //Recover data
-  WorkingString = raw_OBD_response.substring(11,13);   
-  //Serial.println(raw_OBD_response);
-  //Serial.println(WorkingString);
-  A = strtol(WorkingString.c_str(),NULL,16)-40;  //convert hex to decimnal
-  Serial.print(A);
-  Serial.print(" ºC\t");
+/***************************************
+ ******** Get data from sensors ********
+ ***************************************
+ Structure for each sensor:
+  - Send sensor PID
+  - Wait for the ELM327 to acquire
+  - Read ELM327's response
+  - Cut A,B,C,... Bytes values
+  - Convert to integers
+  - Apply formula
+  - Display value and unit (tabulated)
+ ***************************************/
   
-  /**
+  /*
+   * Get Temperature
+   */
+  
+  BTOBD_serial.println("0105");                       //Send temperature sensor PID
+  delay(310);                                         //Wait for the ELM327 to acquire
+  read_elm327_response();                             //Read ELM327's response
+  WorkingString = raw_OBD_response.substring(11,13);  //Cut A Byte value
+  A = strtol(WorkingString.c_str(),NULL,16)-40;       //Convert to integer
+  temp = A;                                           //Apply formula
+  Serial.print(A); Serial.print("\tºC\t");            //Display value and unit (tabulated)
+  
+  /*
    * Get RPM
    */
   
-  BTOBD_serial.println("010C");                     //Send RPM PID (0C from group 01)
-  delay(400);
-  read_serial2();
+  BTOBD_serial.println("010C");                    
+  delay(310);
+  read_elm327_response();
   WorkingString = raw_OBD_response.substring(11,13)+raw_OBD_response.substring(14,16);   
-  //Serial.println(raw_OBD_response);
-  //Serial.println(WorkingString);
-  A = strtol(WorkingString.c_str(),NULL,16);        //convert hex to decimal
-  rpm = A/4;                                        //Apply OBD formula (see OBD PIDs wiki)
-  Serial.print(rpm);
-  Serial.print("\tRPM\t");
+  A = strtol(WorkingString.c_str(),NULL,16);        
+  rpm = A/4;
+  Serial.print(rpm); Serial.print("\tRPM\t");
   
   /**
    * Get Velocity
    */
 
-  BTOBD_serial.println("010D");                       //Send Velocity PID
-  delay(330);
-  read_serial2(); //Receive response
-  WorkingString = raw_OBD_response.substring(11,13);  //Recover data
-  //Serial.println(raw_OBD_response);
-  //Serial.println(WorkingString);
-  A = strtol(WorkingString.c_str(),NULL,16);          //convert hex to decimal and apply formula
-  veloc=A; //Apply OBD formula (see OBD PIDs wiki)
-  Serial.print(veloc);
-  Serial.print("\t[km/h]\t");
+  BTOBD_serial.println("010D");                      
+  delay(310);
+  read_elm327_response();
+  WorkingString = raw_OBD_response.substring(11,13); 
+  A = strtol(WorkingString.c_str(),NULL,16);        
+  veloc=A; 
+  Serial.print(veloc); Serial.print("\t[km/h]\t");
 
   //BTOBD_serial.end();
-  /**
-   * Send data to the cloud
-   * 
-   * 
-   *
+  
+  
+  /************************************
+   ****** Send data to the cloud ******
+   ************************************/
+  
+  /*
   GPRS gprs;
   delay(1000);
   if(0 == gprs.connectTCP(server, 80)){
@@ -274,8 +250,6 @@ void loop(){
   else{
       //Serial.println("connect error");
   }
-
-
   thingspeak_command = ("GET /update?api_key="+WriteAPIKey+"&field1="+rpm+"&field2="+veloc+"    HTTP/1.0\r\n\r\n");
   //Serial.println("command="+thingspeak_command);
   char* http_cmd = const_cast<char*>(thingspeak_command.c_str()); //Parse command to char array
@@ -294,14 +268,17 @@ void loop(){
   delay(1000);
   BTOBD_serial.begin(baud_serial2);
   */
+  
+  
+  
   stop_millis=millis();
   //Serial.print(stop_millis);
-  delay(5000-(stop_millis-start_millis));
+  delay(time_between_loops-(stop_millis-start_millis));
    
 
 }
 
-void read_serial2(){
+void read_elm327_response(){
   raw_OBD_response = "";
   while (BTOBD_serial.available()>0){
     inData=0;
@@ -310,6 +287,7 @@ void read_serial2(){
     inChar=char(inData);
     raw_OBD_response = raw_OBD_response + inChar;
   } 
+  //read_elm327_response()
   //Serial.println(raw_OBD_response);
 }
 
