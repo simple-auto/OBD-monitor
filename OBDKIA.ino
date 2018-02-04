@@ -22,19 +22,16 @@
 
 //#include <gprs.h>
 #include <SoftwareSerial.h>
-//
-
-//SoftwareSerial SIM_serial(8,7);  // SIM
-SoftwareSerial BTOBD_serial(2,3);  // BT-OBD
 
 #define baud_serial0 9600       //Serial Monitor
 //#define baud_serial1 9600       //SIM
+//SoftwareSerial SIM_serial(8,7);  // SIM
+
 #define baud_serial2 38400      //BT-OBD
-
-
-/**
- * OBD Variables
- */
+SoftwareSerial BTOBD_serial(2,3);  // BT-OBD
+/**************************
+ ****** OBD Variables *****
+ **************************/
 //boolean ECU_on = false;         //Engine Control Unit's state
 String  raw_OBD_response = "";  //to save OBD's response after sending commands
 byte    inData;                 //to parse data received from OBD
@@ -43,10 +40,9 @@ String  WorkingString="";       //to cut substrings from raw_OBD_response
 long    A;                      //to save numeric data gotten from control unit's responses
 float   rpm;                    //to save rpm data after applying formula
 float   veloc;                  //to save velocity data after applying formula
-
-/**
- * SIM and Cloud Variables
-*/
+/*****************************************
+ ******** SIM and Cloud Variables ********
+ *****************************************/
 
 /*
 #define DEFAULT_TIMEOUT     5
