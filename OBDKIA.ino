@@ -17,7 +17,7 @@
  * OBD-II  // ELM327 // BT--BT // NANO // SIM800L // CLOUD (NOT IMPLEMENTED YET)
  * 
  * 
- * 
+ * HEX to Binary: https://www.binaryhexconverter.com/hex-to-binary-converter
 */
 
 //#include <gprs.h>
@@ -68,39 +68,27 @@ unsigned long stop_millis = 0;               //to measure time elapsed getting O
 
 
 void setup() {
-  /**
-  * Begin serial:
-  */
+  /*** Begin serial: */
   Serial.begin(baud_serial0);       
   Serial.println("Initializing OBD Monitor System");
   //delay(2000);
 
-  /*
-  * Initialize 2G SIM800L
-  *
-  *
-
+/***********************************************
+ ***       ELM CLI response functions        ***
+ *** (for sending data back to the terminal) ***
+ ***********************************************/
+  
+  
   //SIM_serial.begin(baud_serial1);
   //gprs.serialDebug();
+  /*
   gprs.preInit();
   while(0 != gprs.init()) {
      delay(1000);
      Serial.println("2G initialization error. Check SIM card.");
   }
+  */
   
-    /*Configure GPRS with local APN data (entel Chile)
-     * 
-     * Command                                          Expected response
-   * AT...                                              OK
-   * AT+CPIN?...                                        READY
-   * AT+CFUN=1...                                       OK
-   * AT+CGATT?...                                       OK
-   * AT+CIPSTATUS...                                    STATE: IP INITIAL
-   * AT+CSTT?...                                        "CMNET","","" OK   
-   * AT+CSTT="BAM.ENTELPCS.CL","ENTELPCS","ENTELPCS"... OK
-   * AT+CIICR...                                        OK
-   * AT+CIFSR                                           10.158.17.235 (or similar)
-   */
 /*
   gprs.sendCmdAndWaitForResp("AT+CFUN=1\r\n","OK",DEFAULT_TIMEOUT);
   delay(1000);
@@ -118,28 +106,17 @@ void setup() {
   Serial.println("2G Initialized.");
   //Serial.println(IP);
   
-  
-  /**
-  * Initialize BT HC05
-  */
-  
+ /******************************
+ *** Initialize Bluetooth HC 05
+ ******************************/  
   BTOBD_serial.begin(baud_serial2);
-
-  /**
-   * Bluetooth HC-05 was already permanently configured 
-   * to be binded to ELM327 Bluetooth's address by the
-   * following commands:
-   * 
-   * (Press ENABLE button in HC-05 board)
-   */
+  Serial.println("Bluetooth communication to ELM327 Initialized");
   
-  //Serial.println("BT Initialized");
+ /*********************
+ *** Initialize ELM327
+ *********************/  
   
-  /**
-  * Initialize ELM327
-  */
-  
-  //Ask version (ELM327 v2.1):
+  //Reset and expect version as response (ELM327 v2.1):
   BTOBD_serial.println("atz");
   delay(500);
   while (BTOBD_serial.available()){
