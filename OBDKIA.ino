@@ -1,37 +1,49 @@
 /**
  * 
- * Terralink - Revo Project
+ * Cloud Car Monitor
+ *
+ * Revo Project revoproject@terralink.cl
+ * Terralink SpA, Santiago, Chile
  * 
  * CODE FOR KIA OBD Prototype 1
  * 
  * Collaborators:
- * Vicente Matus      vicente.matus@terralink.cl
- * Andres Astudillo   andres.astudillo@terralink.cl
+ * Vicente Matus
+ * Andres Astudillo
+ *
  * 
  * 
- * Vehicle monitor through OBD-II Bluetooth adapter
- * and Arduino Nano based circuit
+ * OBD-II -- ELM327 -- BT -- BT -- NANO -- SIM800L
  * 
- * 
- * 
- * OBD-II  // ELM327 // BT--BT // NANO // SIM800L // CLOUD (NOT IMPLEMENTED YET)
- * 
- * 
+ * Online Utilities:
  * HEX to Binary: https://www.binaryhexconverter.com/hex-to-binary-converter
 */
+
+/***********************
+ ****** Libraries ******
+ ***********************/
 
 //#include <gprs.h>
 #include <SoftwareSerial.h>
 
-#define baud_serial0 9600       //Serial Monitor
-//#define baud_serial1 9600       //SIM
-//SoftwareSerial SIM_serial(8,7);  // SIM
+/*******************************
+ ****** Runtime Variables ******
+ ******************************/
 
-#define baud_serial2 38400      //BT-OBD
-SoftwareSerial BTOBD_serial(2,3);  // BT-OBD
+unsigned long start_millis = 0;     //to measure time elapsed getting OBD data
+unsigned long stop_millis = 0;      //to measure time elapsed getting OBD data
+
+#define baud_serial0 9600           //Serial inncluded in arduino
+//#define baud_serial1 9600           //SIM
+#define baud_serial2 38400          //BT-OBD
+
+//SoftwareSerial SIM_serial(8,7);     //SIM
+SoftwareSerial BTOBD_serial(2,3);   //BT-OBD
+
 /**************************
  ****** OBD Variables *****
  **************************/
+
 //boolean ECU_on = false;         //Engine Control Unit's state
 String  raw_OBD_response = "";  //to save OBD's response after sending commands
 byte    inData;                 //to parse data received from OBD
@@ -40,10 +52,10 @@ String  WorkingString="";       //to cut substrings from raw_OBD_response
 long    A;                      //to save numeric data gotten from control unit's responses
 float   rpm;                    //to save rpm data after applying formula
 float   veloc;                  //to save velocity data after applying formula
+
 /*****************************************
  ******** SIM and Cloud Variables ********
  *****************************************/
-
 /*
 #define DEFAULT_TIMEOUT     5
 char server[] = "api.thingspeak.com";     //Server's address
@@ -52,29 +64,16 @@ String WriteAPIKey = "AEYR0MF2O3Y512QQ";  //Thingspeak channel key to write data
 String thingspeak_command = "";           //GET command with fields data (defined after getting OBD data)
 //char buffer[512];   
 GPRS gprs;                                //SIM808 object
-//boolean connectivity = false;             //to attempt connection to the cloud or skip and work ofline
-
+//boolean connectivity = false;             //to attempt connection to the cloud or skip and work oflin
 */
-unsigned long start_millis = 0;              //to measure time elapsed getting OBD data
-unsigned long stop_millis = 0;               //to measure time elapsed getting OBD data
 
-/**
- * Runtime Variables
- */
 
 
 void setup() {
+  
   /*** Begin serial: */
   Serial.begin(baud_serial0);       
-  Serial.println("Initializing OBD Monitor System");
-  //delay(2000);
-
-/***********************************************
- ***       ELM CLI response functions        ***
- *** (for sending data back to the terminal) ***
- ***********************************************/
-  
-  
+  Serial.println("Initializing Cloud Car Monitor System");
   //SIM_serial.begin(baud_serial1);
   //gprs.serialDebug();
   /*
