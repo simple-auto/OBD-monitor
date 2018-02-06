@@ -41,9 +41,9 @@ int           time_between_loops  = 5000; //total time elapsed on each iteration
 //SoftwareSerial SIM_serial(8,7);     //SIM
 SoftwareSerial BTOBD_serial(2,3);   //BT-OBD
 
-/**************************
- ****** OBD Variables *****
- **************************/
+/********************************
+ ****** Temporary Variables *****
+ ********************************/
 
 //boolean ECU_on = false;         //Engine Control Unit's state
 String  raw_ELM327_response = ""; //to save OBD's response after sending commands
@@ -54,9 +54,15 @@ long    A;                        //to save numeric data gotten from control uni
 long    B;
 //long    C;
 
+/**************************
+ ****** Car Variables *****
+ **************************/
+
 float   temp;              
 float   rpm;               
 float   veloc;             
+float   ndtc;
+
 
 
 /*****************************************
@@ -131,14 +137,32 @@ void setup() {
   BTOBD_serial.println("at dpn");       //Describe Protocol Number
   delay(500); read_elm327_response(); Serial.println(raw_ELM327_response);
   
-  BTOBD_serial.println("01");           //Request Mode 01 (Number of DTCs)
+  BTOBD_serial.println("0101");           //Request Mode 0101 (Number of DTCs)
   delay(500); read_elm327_response(); Serial.println(raw_ELM327_response);
+  
   //if non zero, request DTCs
+  WorkingString = raw_ELM327_response.substring(11,13);   //Cut A Byte value
+  A = strtol(WorkingString.c_str(),NULL,16)-40;           //Convert to integer
+  ndtc = A-128;                                           //Apply formula
+  Serial.print("Number of DTCs:\t");Serial.println(ndtc); //Display value
   
-  BTOBD_serial.println("03");           //Request Mode 03 (List of DTCs)
+  
+  /*
+   * Get DTCs if nonzero
+   */
+  
+  if(ndtc!=0){
+    BTOBD_serial.println("03");           //Request Mode 03 (List of DTCs)
+    delay(500); read_elm327_response(); Serial.println(raw_ELM327_response);
+  }
+  
+  BTOBD_serial.println("01 00");        //Receive Mode-01 Available Sensors (1 to 20)
   delay(500); read_elm327_response(); Serial.println(raw_ELM327_response);
-  
-  BTOBD_serial.println("01 00");        //Receive Mode-01 Available Sensors
+  BTOBD_serial.println("01 20");        //Receive Mode-01 Available Sensors (21 to 40)
+  delay(500); read_elm327_response(); Serial.println(raw_ELM327_response);
+  BTOBD_serial.println("01 40");        //Receive Mode-01 Available Sensors (41 to 60)
+  delay(500); read_elm327_response(); Serial.println(raw_ELM327_response)
+  BTOBD_serial.println("01 60");        //Receive Mode-01 Available Sensors (61 to 80)
   delay(500); read_elm327_response(); Serial.println(raw_ELM327_response);
   
   BTOBD_serial.println("01 05");        //Request PID 05 (Coolant Temperature)
@@ -149,6 +173,8 @@ void setup() {
   
   BTOBD_serial.println("01 0D");        //Request PID 0D (Vehicle Speed)
   delay(500); read_elm327_response(); Serial.println(raw_ELM327_response);
+  
+  
   
 }
 
