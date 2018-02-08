@@ -65,7 +65,7 @@ float   ndtc;
 float   var;
 
 String pidstart[]={"atz", "at sp 0", "at dp", "at dpn","0902", "0A", "07", "0100", "0120", "0140", "0160"};
-String %start[]={"Reset: ", "Auto protocol: ", "Protocol: ", "Protocol number: ", "VIN: ", "Cleared DTCs: ", "Last cycle DTCs: ", "Supported PIDs 00: ", "Supported PIDs 20:", "Supported PIDs 40: ", "Supported PIDs 60: "};
+String start[]={"Reset: ", "Auto protocol: ", "Protocol: ", "Protocol number: ", "VIN: ", "Cleared DTCs: ", "Last cycle DTCs: ", "Supported PIDs 00: ", "Supported PIDs 20:", "Supported PIDs 40: ", "Supported PIDs 60: "};
 int l1=10;
 
 String pid1s[]={"010D", "0133", "0111", "010C", "0163", "015E", "011F"};
@@ -218,6 +218,7 @@ void loop(){
   var = A/c1[i];                                         //Apply formula
   Serial.print(s1[i]); Serial.print(var); Serial.print(u1[i]); Serial.print("\t);  //Display value and unit (tabulated)
   }
+                                                                            
   //1 sec A and B bytes
   for(int i=3; i<=l2; i++){
   BTOBD_serial.println(pid1s[i]);                         //Send sensor PID
@@ -230,6 +231,7 @@ void loop(){
   var = (256*A+B)/c1[i];                                //Apply formula
   Serial.print(s1[i]); Serial.print(var); Serial.print(u1[i]); Serial.print("\t);  //Display value and unit (tabulated)
   }
+                                                                            
   //30 sec
   for(int i=0; i<=l3; i++){
   BTOBD_serial.println(pid30s[i]);                       //Send sensor PID
