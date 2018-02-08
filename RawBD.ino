@@ -64,18 +64,24 @@ float   veloc;
 float   ndtc;
 float   var;
 
-String pidstart[]={"atz", "at sp 0", "at dp", "at dpn","0902", "0A", "07", "0100", "0120", "0140", "0160"};
-String start[]={"Reset: ", "Auto protocol: ", "Protocol: ", "Protocol number: ", "VIN: ", "Cleared DTCs: ", "Last cycle DTCs: ", "Supported PIDs 00: ", "Supported PIDs 20:", "Supported PIDs 40: ", "Supported PIDs 60: "};
-int l1=10;
+String pidstart[]={"atz", "at sp 0", "at dp", "at dpn","0902", "0A", "07"};
+String start[]={"Reset: ", "Auto protocol: ", "Protocol: ", "Protocol number: ", "VIN: ", "Cleared DTCs: ", "Last cycle DTCs: "};
+int l1=6;
+
+//VIN Hex to Char
+
+String supid[]={"01 00", "01 20", "01 40", "01 60"}; //Supported PIDs
 
 String pid1s[]={"010D", "0133", "0111", "010C", "0163", "015E", "011F"};
-String s1[]={"Speed: ", "RPM: ", "Ref Torque: ", "Pressure: ", "Fuel rate: ", "Run time: ", "Throttle: "};
-String u1[]={" [km/h]", " [RPM]", " [Nm]", " [kPa]", " [L/h]", " [s]", " [%]"};
+String s1[]={"Speed: ", "Pressure: ", "Throttle: ", "RPM: ", "Ref Torque: ", "Fuel rate: ", "Run time: "};
+String u1[]={" [km/h]", " [kPa]", " [%]", " [RPM]", " [Nm]", " [L/h]", " [s]"};
+String p1[]={13, 51, 17, 12, 99, 94, 31}; //bit position for support check
 int l2=6;
 
 String pid30s[]={"015C", "0105", "0146", "015B"};
 String s30[]={"Oil temp: ", "Coolant temp: ", "Ambient temp: ", "Battery life: "};
 String u30[]={ " [°C]", " [°C]", " [°C]", " [%]"};
+String p30[]={92, 5, 70, 91}; //bit position for support check
 int l3=3;
 
 //(A*a+B)/c
@@ -148,16 +154,37 @@ void setup() {
   delay(500); read_elm327_response();   
   Serial.print(start[i]); Serial.println(raw_ELM327_response);  
   }
+  //Get supported PIDs
+  for(int i=0; i<=3; i++){             
+  BTOBD_serial.println(supid[i]);          
+  delay(500); read_elm327_response(); Serial.println(raw_ELM327_response);  
+  WorkingString = raw_ELM327_response;
+  A = strtol(WorkingString.c_str(),NULL,2);              //Convert to binary????
+  sup= //ARMAR concatenar binarios
+  }  
   //1s
   for(int i=0; i<=l2; i++){             
   BTOBD_serial.println(pid1s[i]);          
-  delay(500); read_elm327_response(); Serial.println(raw_ELM327_response);  
+  delay(500); read_elm327_response(); Serial.print(s1[i]); Serial.print(raw_ELM327_response);  
+    if(sup.substring(p1[i])==1){ //bitRead
+    Serial.println(" Supported ");
+    }
+    else{
+    Serial.println(" Not supported ");
+    }
   }
   //30s
   for(int i=0; i<=l1; i++){             
   BTOBD_serial.println(pid30s[i]);          
-  delay(500); read_elm327_response(); Serial.println(raw_ELM327_response);  
+  delay(500); read_elm327_response(); Serial.print(s30[i]); Serial.print(raw_ELM327_response);  
+    if(sup.substring(p30[i])==1){ //bitRead
+    Serial.println(" Supported ");
+    }
+    else{
+    Serial.println(" Not supported ");
+    }
   }  
+ 
   //Number of DTC codes 
   BTOBD_serial.println("0101");
   delay(500); read_elm327_response(); Serial.println(raw_ELM327_response);
@@ -173,8 +200,7 @@ void setup() {
     Serial.print("DTC: ");Serial.println(raw_ELM327_response);
   }
   
-  //Get supported PIDs
- 
+
 }
 
 void loop(){
