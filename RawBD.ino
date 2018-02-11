@@ -64,11 +64,9 @@ float   veloc;
 float   ndtc;
 float   var;
 
-String pidstart[]={"atz", "at sp 0", "at dp", "at dpn","0902", "0A", "07"};
-String start[]={"Reset: ", "Auto protocol: ", "Protocol: ", "Protocol number: ", "VIN: ", "Cleared DTCs: ", "Last cycle DTCs: "};
-int l1=6;
-
-//VIN Hex to Char
+String pidstart[]={"atz", "at sp 0", "at dp", "at dpn", "0A", "07"};
+String start[]={"Reset: ", "Auto protocol: ", "Protocol: ", "Protocol number: ", "Cleared DTCs: ", "Last cycle DTCs: "};
+int l1=5;
 
 String supid[]={"01 00", "01 20", "01 40", "01 60"}; //Supported PIDs
 
@@ -145,10 +143,18 @@ void setup() {
   BTOBD_serial.begin(baud_serial2);
   Serial.println("Bluetooth communication to ELM327 Initialized");
   
+  //ELM327_enter_terminal_mode()
+  
  /*********************
  *** Initialize ELM327
  *********************/  
-   //Start 
+  //Get VIN
+  BTOBD_serial.println("0902");
+  delay(500); read_elm327_response();   
+  Serial.print("VIN: "); Serial.println(raw_ELM327_response);  
+  //VIN Hex to Char
+  
+  //Start 
   for(int i=0; i<=l1; i++){             
   BTOBD_serial.println(pidstart[i]);          
   delay(500); read_elm327_response();   
@@ -158,31 +164,33 @@ void setup() {
   for(int i=0; i<=3; i++){             
   BTOBD_serial.println(supid[i]);          
   delay(500); read_elm327_response(); Serial.println(raw_ELM327_response);  
-  WorkingString = raw_ELM327_response;
-  A = strtol(WorkingString.c_str(),NULL,2);              //Convert to binary????
-  sup= //ARMAR concatenar binarios
+    for(int j=0; j<=sizeof(raw_ELM327_response); j++){
+    WorkingString = raw_ELM327_response.substring(8,11);
+    A = strtol(WorkingString.c_str(),NULL,2);              //Convert to binary????
+    }
+  //sup= //ARMAR concatenar binarios
   }  
   //1s
   for(int i=0; i<=l2; i++){             
   BTOBD_serial.println(pid1s[i]);          
   delay(500); read_elm327_response(); Serial.print(s1[i]); Serial.print(raw_ELM327_response);  
-    if(sup.substring(p1[i])==1){ //bitRead
-    Serial.println(" Supported ");
-    }
-    else{
-    Serial.println(" Not supported ");
-    }
+    //if(sup.substring(p1[i])==1){ //bitRead
+    //Serial.println(" Supported ");
+    //}
+    //else{
+    //Serial.println(" Not supported ");
+    //}
   }
   //30s
   for(int i=0; i<=l1; i++){             
   BTOBD_serial.println(pid30s[i]);          
   delay(500); read_elm327_response(); Serial.print(s30[i]); Serial.print(raw_ELM327_response);  
-    if(sup.substring(p30[i])==1){ //bitRead
-    Serial.println(" Supported ");
-    }
-    else{
-    Serial.println(" Not supported ");
-    }
+    //if(sup.substring(p30[i])==1){ //bitRead
+    //Serial.println(" Supported ");
+    //}
+    //else{
+    //Serial.println(" Not supported ");
+    //}
   }  
  
   //Number of DTC codes 
