@@ -58,9 +58,9 @@ long    B;
  ****** Car Variables *****
  **************************/
 
-float   temp;              
-float   rpm;               
-float   veloc;             
+//float   temp;              
+//float   rpm;               
+//float   veloc;             
 float   ndtc;
 float   var;
 
@@ -68,24 +68,26 @@ String pidstart[]={"atz", "at sp 0", "at dp", "at dpn", "0A", "07"};
 String start[]={"Reset: ", "Auto protocol: ", "Protocol: ", "Protocol number: ", "Cleared DTCs: ", "Last cycle DTCs: "};
 int l1=5;
 
-String supid[]={"01 00", "01 20", "01 40", "01 60"}; //Supported PIDs
+String supid[]={"0100", "0120", "0140", "0160"}; //Supported PIDs
 
 String pid1s[]={"010D", "0133", "0111", "010C", "0163", "015E", "011F"};
 String s1[]={"Speed: ", "Pressure: ", "Throttle: ", "RPM: ", "Ref Torque: ", "Fuel rate: ", "Run time: "};
 String u1[]={" [km/h]", " [kPa]", " [%]", " [RPM]", " [Nm]", " [L/h]", " [s]"};
-String p1[]={13, 51, 17, 12, 99, 94, 31}; //bit position for support check
+//String p1[]={13, 51, 17, 12, 99, 94, 31}; //bit position for support check
 int l2=6;
 
-String pid30s[]={"015C", "0105", "0146", "015B"};
-String s30[]={"Oil temp: ", "Coolant temp: ", "Ambient temp: ", "Battery life: "};
-String u30[]={ " [°C]", " [°C]", " [°C]", " [%]"};
-String p30[]={92, 5, 70, 91}; //bit position for support check
-int l3=3;
+String pid30s[]={"015C", "0105", "0146", "0131", "015B"};
+String s30[]={"Oil temp: ", "Coolant temp: ", "Ambient temp: ", "Distance cleared DTCs: ","Battery life: "};
+String u30[]={ " [°C]", " [°C]", " [°C]", " [km]", " [%]"};
+//String p30[]={92, 5, 70, 49, 91}; //bit position for support check
+int l3=4;
 
+/*
 //(A*a+B)/c
 float c1[]={1, 1, 2.55, 4, 1, 20, 1};
 int b30[]={40, 40, 40, 0};
 float c30[]={1, 1, 1, 2.55};
+*/
 
 /*****************************************
  ******** SIM and Cloud Variables ********
@@ -160,16 +162,19 @@ void setup() {
   delay(500); read_elm327_response();   
   Serial.print(start[i]); Serial.println(raw_ELM327_response);  
   }
+  
   //Get supported PIDs
   for(int i=0; i<=3; i++){             
   BTOBD_serial.println(supid[i]);          
-  delay(500); read_elm327_response(); Serial.println(raw_ELM327_response);  
-    for(int j=0; j<=sizeof(raw_ELM327_response); j++){
+  delay(500); read_elm327_response(); Serial.print(supid[i]);
+  Serial.print(": "); Serial.println(raw_ELM327_response);  
+    /*for(int j=0; j<=sizeof(raw_ELM327_response); j++){
     WorkingString = raw_ELM327_response.substring(8,11);
     A = strtol(WorkingString.c_str(),NULL,2);              //Convert to binary????
-    }
+    }*/
   //sup= //ARMAR concatenar binarios
   }  
+  
   //1s
   for(int i=0; i<=l2; i++){             
   BTOBD_serial.println(pid1s[i]);          
@@ -181,6 +186,7 @@ void setup() {
     //Serial.println(" Not supported ");
     //}
   }
+  
   //30s
   for(int i=0; i<=l1; i++){             
   BTOBD_serial.println(pid30s[i]);          
@@ -246,35 +252,41 @@ void loop(){
   for(int i=0; i<=2; i++){
   BTOBD_serial.println(pid1s[i]);                       //Send sensor PID
   delay(310);                                           //Wait for the ELM327 to acquire
-  read_elm327_response();                               //Read ELM327's response
-  WorkingString = raw_ELM327_response.substring(11,13); //Cut A Byte value
+  read_elm327_response(); Serial.print(s1[i]); Serial.print(raw_ELM327_response); 
+  Serial.print(u1[i]); Serial.print("\t");               //Read ELM327's response
+  /*WorkingString = raw_ELM327_response.substring(11,13); //Cut A Byte value
   A = strtol(WorkingString.c_str(),NULL,16);            //Convert to integer
   var = A/c1[i];                                         //Apply formula
-  Serial.print(s1[i]); Serial.print(var); Serial.print(u1[i]); Serial.print("\t);  //Display value and unit (tabulated)
+  Serial.print(s1[i]); Serial.print(var); Serial.print(u1[i]); Serial.print("\t");  //Display value and unit (tabulated)
+  */
   }
                                                                             
   //1 sec A and B bytes
   for(int i=3; i<=l2; i++){
   BTOBD_serial.println(pid1s[i]);                         //Send sensor PID
   delay(310);                                           //Wait for the ELM327 to acquire
-  read_elm327_response();                               //Read ELM327's response
-  WorkingString = raw_ELM327_response.substring(11,13); //Cut A Byte value
+  read_elm327_response(); Serial.print(s1[i]); Serial.print(raw_ELM327_response); 
+  Serial.print(u1[i]); Serial.print("\t");                              //Read ELM327's response
+  /*WorkingString = raw_ELM327_response.substring(11,13); //Cut A Byte value
   A = strtol(WorkingString.c_str(),NULL,16);            //Convert to integer
   WorkingString = raw_ELM327_response.substring(14,16); //Cut B Byte value  
   B = strtol(WorkingString.c_str(),NULL,16);            //Convert to integer    
   var = (256*A+B)/c1[i];                                //Apply formula
-  Serial.print(s1[i]); Serial.print(var); Serial.print(u1[i]); Serial.print("\t);  //Display value and unit (tabulated)
+  Serial.print(s1[i]); Serial.print(var); Serial.print(u1[i]); Serial.print("\t");  //Display value and unit (tabulated)
+  */
   }
                                                                             
   //30 sec
   for(int i=0; i<=l3; i++){
   BTOBD_serial.println(pid30s[i]);                       //Send sensor PID
   delay(310);                                           //Wait for the ELM327 to acquire
-  read_elm327_response();                               //Read ELM327's response
-  WorkingString = raw_ELM327_response.substring(11,13); //Cut A Byte value
+  read_elm327_response(); Serial.print(s30[i]); Serial.print(raw_ELM327_response); 
+  Serial.print(u30[i]); Serial.print("\t");                              //Read ELM327's response
+  /*WorkingString = raw_ELM327_response.substring(11,13); //Cut A Byte value
   A = strtol(WorkingString.c_str(),NULL,16);            //Convert to integer
   var = (A-b30[i])/c30[i];                              //Apply formula
-  Serial.print(s30[i]); Serial.print(var); Serial.print(u30[i]); Serial.print("\t);  //Display value and unit (tabulated)
+  Serial.print(s30[i]); Serial.print(var); Serial.print(u30[i]); Serial.print("\t");  //Display value and unit (tabulated)
+  */
   }
   
 
