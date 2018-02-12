@@ -178,7 +178,7 @@ void setup() {
   //1s
   for(int i=0; i<=l2; i++){             
   BTOBD_serial.println(pid1s[i]);          
-  delay(500); read_elm327_response(); Serial.print(s1[i]); Serial.print(raw_ELM327_response);  
+  delay(500); read_elm327_response(); Serial.print(s1[i]); Serial.println(raw_ELM327_response);  
     //if(sup.substring(p1[i])==1){ //bitRead
     //Serial.println(" Supported ");
     //}
@@ -188,9 +188,9 @@ void setup() {
   }
   
   //30s
-  for(int i=0; i<=l1; i++){             
+  for(int i=0; i<=l3; i++){             
   BTOBD_serial.println(pid30s[i]);          
-  delay(500); read_elm327_response(); Serial.print(s30[i]); Serial.print(raw_ELM327_response);  
+  delay(500); read_elm327_response(); Serial.print(s30[i]); Serial.println(raw_ELM327_response);  
     //if(sup.substring(p30[i])==1){ //bitRead
     //Serial.println(" Supported ");
     //}
