@@ -32,7 +32,7 @@
 
 unsigned long timestamp           = 0;    //to measure time elapsed getting OBD data
 unsigned long time_elapsed        = 0;    //to measure time elapsed getting OBD data
-int           time_between_loops  = 5000; //total time elapsed on each iteration in [ms]
+int           time_between_loops  = 1000; //total time elapsed on each iteration in [ms]
 
 #define baud_serial0 9600           //Serial inncluded in arduino
 //#define baud_serial1 9600           //SIM
@@ -64,16 +64,16 @@ long    B;
 float   ndtc;
 float   var;
 
-String pidstart[]={"atz", "at sp 0", "at dp", "at dpn", "0A", "07"};
-String start[]={"Reset: ", "Auto protocol: ", "Protocol: ", "Protocol number: ", "Cleared DTCs: ", "Last cycle DTCs: "};
-int l1=5;
+String pidstart[]={"atz", "at sp 0", "at dp", "at dpn", "0A"};
+String start[]={"Reset: ", "Auto protocol: ", "Protocol: ", "Protocol number: ", "Cleared DTCs: "};
+int l1=4;
 
 String supid[]={"0100", "0120", "0140", "0160"}; //Supported PIDs
 
 String pid1s[]={"010D", "0133", "0111", "010C", "0163", "015E", "011F"};
-String s1[]={"Speed: ", "Pressure: ", "Throttle: ", "RPM: ", "Ref Torque: ", "Fuel rate: ", "Run time: "};
-String u1[]={" [km/h]", " [kPa]", " [%]", " [RPM]", " [Nm]", " [L/h]", " [s]"};
-//String p1[]={13, 51, 17, 12, 99, 94, 31}; //bit position for support check
+String s1[]={"Speed: ", "Pressure: ", "Throttle: ", "RPM: ", "Run time: ", "Ref Torque: ", "Fuel rate: "};
+String u1[]={" [km/h]", " [kPa]", " [%]", " [RPM]", " [s]", " [Nm]", " [L/h]"};
+//String p1[]={13, 51, 17, 12, 31, 99, 94}; //bit position for support check
 int l2=6;
 
 String pid30s[]={"015C", "0105", "0146", "0131", "015B"};
@@ -83,10 +83,10 @@ String u30[]={ " [°C]", " [°C]", " [°C]", " [km]", " [%]"};
 int l3=4;
 
 /*
-//(A*a+B)/c
-float c1[]={1, 1, 2.55, 4, 1, 20, 1};
+//((A-p)*q+B)*r/s
+int q1[]={1, 1, 2.55, 4, 1, 20, 1};
 int b30[]={40, 40, 40, 0};
-float c30[]={1, 1, 1, 2.55};
+int c30[]={1, 1, 1, 2.55};
 */
 
 /*****************************************
@@ -145,28 +145,29 @@ void setup() {
   BTOBD_serial.begin(baud_serial2);
   Serial.println("Bluetooth communication to ELM327 Initialized");
   
-  //ELM327_enter_terminal_mode()
+  //ELM327_enter_terminal_mode();
   
  /*********************
  *** Initialize ELM327
  *********************/  
-  //Get VIN
-  BTOBD_serial.println("0902");
-  delay(500); read_elm327_response();   
-  Serial.print("VIN: "); Serial.println(raw_ELM327_response);  
-  //VIN Hex to Char
-  
+
   //Start 
   for(int i=0; i<=l1; i++){             
   BTOBD_serial.println(pidstart[i]);          
-  delay(500); read_elm327_response();   
+  delay(10000); read_elm327_response();   
   Serial.print(start[i]); Serial.println(raw_ELM327_response);  
   }
+  
+  //Get VIN
+  BTOBD_serial.println("0902");
+  delay(10000); read_elm327_response();   
+  Serial.print("VIN: "); Serial.println(raw_ELM327_response);  
+  //VIN Hex to Char
   
   //Get supported PIDs
   for(int i=0; i<=3; i++){             
   BTOBD_serial.println(supid[i]);          
-  delay(500); read_elm327_response(); Serial.print(supid[i]);
+  delay(5000); read_elm327_response(); Serial.print(supid[i]);
   Serial.print(": "); Serial.println(raw_ELM327_response);  
     /*for(int j=0; j<=sizeof(raw_ELM327_response); j++){
     WorkingString = raw_ELM327_response.substring(8,11);
@@ -178,7 +179,7 @@ void setup() {
   //1s
   for(int i=0; i<=l2; i++){             
   BTOBD_serial.println(pid1s[i]);          
-  delay(500); read_elm327_response(); Serial.print(s1[i]); Serial.println(raw_ELM327_response);  
+  delay(5000); read_elm327_response(); Serial.print(s1[i]); Serial.println(raw_ELM327_response);  
     //if(sup.substring(p1[i])==1){ //bitRead
     //Serial.println(" Supported ");
     //}
@@ -190,7 +191,7 @@ void setup() {
   //30s
   for(int i=0; i<=l3; i++){             
   BTOBD_serial.println(pid30s[i]);          
-  delay(500); read_elm327_response(); Serial.print(s30[i]); Serial.println(raw_ELM327_response);  
+  delay(5000); read_elm327_response(); Serial.print(s30[i]); Serial.println(raw_ELM327_response);  
     //if(sup.substring(p30[i])==1){ //bitRead
     //Serial.println(" Supported ");
     //}
@@ -201,7 +202,7 @@ void setup() {
  
   //Number of DTC codes 
   BTOBD_serial.println("0101");
-  delay(500); read_elm327_response(); Serial.println(raw_ELM327_response);
+  delay(10000); read_elm327_response(); Serial.println(raw_ELM327_response);
   WorkingString = raw_ELM327_response.substring(11,13);   //Cut A Byte value
   A = strtol(WorkingString.c_str(),NULL,16);              //Convert to integer
   ndtc = A-128;                                           //Apply formula
@@ -210,7 +211,7 @@ void setup() {
   //Get DTC codes  
   if(ndtc!=0){
     BTOBD_serial.println("03");           //Request Mode 03 (List of DTCs)
-    delay(5000); read_elm327_response();  //Check delay
+    delay(10000); read_elm327_response();  //Check delay
     Serial.print("DTC: ");Serial.println(raw_ELM327_response);
   }
   
@@ -251,7 +252,7 @@ void loop(){
   //1 sec A byte
   for(int i=0; i<=2; i++){
   BTOBD_serial.println(pid1s[i]);                       //Send sensor PID
-  delay(310);                                           //Wait for the ELM327 to acquire
+  delay(10);                                           //Wait for the ELM327 to acquire
   read_elm327_response(); Serial.print(s1[i]); Serial.print(raw_ELM327_response); 
   Serial.print(u1[i]); Serial.print("\t");               //Read ELM327's response
   /*WorkingString = raw_ELM327_response.substring(11,13); //Cut A Byte value
@@ -264,7 +265,7 @@ void loop(){
   //1 sec A and B bytes
   for(int i=3; i<=l2; i++){
   BTOBD_serial.println(pid1s[i]);                         //Send sensor PID
-  delay(310);                                           //Wait for the ELM327 to acquire
+  delay(10);                                           //Wait for the ELM327 to acquire
   read_elm327_response(); Serial.print(s1[i]); Serial.print(raw_ELM327_response); 
   Serial.print(u1[i]); Serial.print("\t");                              //Read ELM327's response
   /*WorkingString = raw_ELM327_response.substring(11,13); //Cut A Byte value
@@ -279,7 +280,7 @@ void loop(){
   //30 sec
   for(int i=0; i<=l3; i++){
   BTOBD_serial.println(pid30s[i]);                       //Send sensor PID
-  delay(310);                                           //Wait for the ELM327 to acquire
+  delay(10);                                           //Wait for the ELM327 to acquire
   read_elm327_response(); Serial.print(s30[i]); Serial.print(raw_ELM327_response); 
   Serial.print(u30[i]); Serial.print("\t");                              //Read ELM327's response
   /*WorkingString = raw_ELM327_response.substring(11,13); //Cut A Byte value
