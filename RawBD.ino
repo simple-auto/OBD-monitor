@@ -78,8 +78,8 @@ String u1[]={" [km/h]", " [kPa]", " [RPM]"};
 
 String pid30s[]={"0105", "0146", "0131"};
 String s30[]={"Coolant temp: ", "Ambient temp: ", "Distance cleared DTCs: "};
-String u30[]={ " [°C]", " [°C]", " [°C]", " [km]", " [%]"};
-//String p30[]={92, 5, 70, 49, 91}; //bit position for support check
+String u30[]={ " [°C]", " [°C]", " [km]"};
+//String p30[]={5, 70, 49}; //bit position for support check
 
 
 /*
@@ -209,7 +209,7 @@ void setup() {
   
   //Number of DTC codes 
   BTOBD_serial.println("0101");
-  delay(5000); read_elm327_response(); 
+  delay(500); read_elm327_response(); 
   //Serial.println(raw_ELM327_response);
   WorkingString = raw_ELM327_response.substring(11,13);   //Cut A Byte value
   A = strtol(WorkingString.c_str(),NULL,16);              //Convert to integer
@@ -262,9 +262,9 @@ void loop(){
  ***************************************/
   
   //1 sec A byte
-  for(int i=0; i<=2; i++){
+  for(int i=0; i<=1; i++){
   BTOBD_serial.println(pid1s[i]);                       //Send sensor PID
-  delay(200);                                           //Wait for the ELM327 to acquire
+  delay(150);                                           //Wait for the ELM327 to acquire
   read_elm327_response(); Serial.print(s1[i]); Serial.print(raw_ELM327_response); 
   Serial.print(u1[i]); Serial.print("\t");               //Read ELM327's response
   /*WorkingString = raw_ELM327_response.substring(11,13); //Cut A Byte value
@@ -276,7 +276,7 @@ void loop(){
                                                                             
   //1 sec A and B bytes
   BTOBD_serial.println(pid1s[2]);                         //Send sensor PID
-  delay(200);                                           //Wait for the ELM327 to acquire
+  delay(150);                                           //Wait for the ELM327 to acquire
   read_elm327_response(); Serial.print(s1[2]); Serial.print(raw_ELM327_response); 
   Serial.print(u1[2]); Serial.print("\t");                              //Read ELM327's response
   /*WorkingString = raw_ELM327_response.substring(11,13); //Cut A Byte value
@@ -291,7 +291,7 @@ void loop(){
   //30 sec
   for(int i=0; i<=2; i++){
   BTOBD_serial.println(pid30s[i]);                       //Send sensor PID
-  delay(200);                                           //Wait for the ELM327 to acquire
+  delay(150);                                           //Wait for the ELM327 to acquire
   read_elm327_response(); Serial.print(s30[i]); Serial.print(raw_ELM327_response); 
   Serial.print(u30[i]); Serial.print("\t");                              //Read ELM327's response
   /*WorkingString = raw_ELM327_response.substring(11,13); //Cut A Byte value
