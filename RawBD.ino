@@ -64,23 +64,23 @@ long    B;
 float   ndtc;
 float   var;
 
-String pidstart[]={"atz", "at sp 0", "at dp", "at dpn", "0A"};
-String start[]={"Reset: ", "Auto protocol: ", "Protocol: ", "Protocol number: ", "Cleared DTCs: "};
-int l1=4;
+String pidstart[]={"atz", "at sp 0", "0A", "at dp", "at dpn"};
+String start[]={"Reset: ", "Auto protocol: ", "Cleared DTCs: ", "Protocol: ", "Protocol number: "};
+
 
 String supid[]={"0100", "0120", "0140", "0160"}; //Supported PIDs
 
-String pid1s[]={"010D", "0133", "0111", "010C", "0163", "015E", "011F"};
-String s1[]={"Speed: ", "Pressure: ", "Throttle: ", "RPM: ", "Run time: ", "Ref Torque: ", "Fuel rate: "};
-String u1[]={" [km/h]", " [kPa]", " [%]", " [RPM]", " [s]", " [Nm]", " [L/h]"};
-//String p1[]={13, 51, 17, 12, 31, 99, 94}; //bit position for support check
-int l2=6;
+String pid1s[]={"010D", "0133", "010C"};
+String s1[]={"Speed: ", "Pressure: ", "RPM: "};
+String u1[]={" [km/h]", " [kPa]", " [RPM]"};
+//String p1[]={13, 51, 12}; //bit position for support check
 
-String pid30s[]={"015C", "0105", "0146", "0131", "015B"};
-String s30[]={"Oil temp: ", "Coolant temp: ", "Ambient temp: ", "Distance cleared DTCs: ","Battery life: "};
+
+String pid30s[]={"0105", "0146", "0131"};
+String s30[]={"Coolant temp: ", "Ambient temp: ", "Distance cleared DTCs: "};
 String u30[]={ " [°C]", " [°C]", " [°C]", " [km]", " [%]"};
 //String p30[]={92, 5, 70, 49, 91}; //bit position for support check
-int l3=4;
+
 
 /*
 //((A-p)*q+B)*r/s
@@ -152,22 +152,22 @@ void setup() {
  *********************/  
 
   //Start 
-  for(int i=0; i<=l1; i++){             
+  for(int i=0; i<=2; i++){             
   BTOBD_serial.println(pidstart[i]);          
-  delay(10000); read_elm327_response();   
+  delay(500); read_elm327_response();   
   Serial.print(start[i]); Serial.println(raw_ELM327_response);  
   }
   
   //Get VIN
   BTOBD_serial.println("0902");
-  delay(10000); read_elm327_response();   
+  delay(500); read_elm327_response(); delay(500);  
   Serial.print("VIN: "); Serial.println(raw_ELM327_response);  
   //VIN Hex to Char
   
   //Get supported PIDs
   for(int i=0; i<=3; i++){             
   BTOBD_serial.println(supid[i]);          
-  delay(5000); read_elm327_response(); Serial.print(supid[i]);
+  delay(500); read_elm327_response(); Serial.print(supid[i]);
   Serial.print(": "); Serial.println(raw_ELM327_response);  
     /*for(int j=0; j<=sizeof(raw_ELM327_response); j++){
     WorkingString = raw_ELM327_response.substring(8,11);
@@ -177,9 +177,9 @@ void setup() {
   }  
   
   //1s
-  for(int i=0; i<=l2; i++){             
+  for(int i=0; i<=2; i++){             
   BTOBD_serial.println(pid1s[i]);          
-  delay(5000); read_elm327_response(); Serial.print(s1[i]); Serial.println(raw_ELM327_response);  
+  delay(500); read_elm327_response(); Serial.print(s1[i]); Serial.println(raw_ELM327_response);  
     //if(sup.substring(p1[i])==1){ //bitRead
     //Serial.println(" Supported ");
     //}
@@ -189,9 +189,9 @@ void setup() {
   }
   
   //30s
-  for(int i=0; i<=l3; i++){             
+  for(int i=0; i<=2; i++){             
   BTOBD_serial.println(pid30s[i]);          
-  delay(5000); read_elm327_response(); Serial.print(s30[i]); Serial.println(raw_ELM327_response);  
+  delay(500); read_elm327_response(); Serial.print(s30[i]); Serial.println(raw_ELM327_response);  
     //if(sup.substring(p30[i])==1){ //bitRead
     //Serial.println(" Supported ");
     //}
@@ -200,18 +200,30 @@ void setup() {
     //}
   }  
  
+  //Protocol
+  for(int i=3; i<=4; i++){             
+  BTOBD_serial.println(pidstart[i]);          
+  delay(500); read_elm327_response(); delay(500);   
+  Serial.print(start[i]); Serial.println(raw_ELM327_response);  
+  }
+  
   //Number of DTC codes 
   BTOBD_serial.println("0101");
-  delay(10000); read_elm327_response(); Serial.println(raw_ELM327_response);
+  delay(5000); read_elm327_response(); 
+  //Serial.println(raw_ELM327_response);
   WorkingString = raw_ELM327_response.substring(11,13);   //Cut A Byte value
   A = strtol(WorkingString.c_str(),NULL,16);              //Convert to integer
   ndtc = A-128;                                           //Apply formula
-  Serial.print("Number of DTCs: ");Serial.println(ndtc);  
+  Serial.print("Number of DTCs: ");
+  if(ndtc==-128){
+    ndtc=0;
+  }
+  Serial.println(ndtc); 
   
   //Get DTC codes  
   if(ndtc!=0){
     BTOBD_serial.println("03");           //Request Mode 03 (List of DTCs)
-    delay(10000); read_elm327_response();  //Check delay
+    delay(7000); read_elm327_response();  //Check delay
     Serial.print("DTC: ");Serial.println(raw_ELM327_response);
   }
   
@@ -252,7 +264,7 @@ void loop(){
   //1 sec A byte
   for(int i=0; i<=2; i++){
   BTOBD_serial.println(pid1s[i]);                       //Send sensor PID
-  delay(10);                                           //Wait for the ELM327 to acquire
+  delay(200);                                           //Wait for the ELM327 to acquire
   read_elm327_response(); Serial.print(s1[i]); Serial.print(raw_ELM327_response); 
   Serial.print(u1[i]); Serial.print("\t");               //Read ELM327's response
   /*WorkingString = raw_ELM327_response.substring(11,13); //Cut A Byte value
@@ -263,11 +275,10 @@ void loop(){
   }
                                                                             
   //1 sec A and B bytes
-  for(int i=3; i<=l2; i++){
-  BTOBD_serial.println(pid1s[i]);                         //Send sensor PID
-  delay(10);                                           //Wait for the ELM327 to acquire
-  read_elm327_response(); Serial.print(s1[i]); Serial.print(raw_ELM327_response); 
-  Serial.print(u1[i]); Serial.print("\t");                              //Read ELM327's response
+  BTOBD_serial.println(pid1s[2]);                         //Send sensor PID
+  delay(200);                                           //Wait for the ELM327 to acquire
+  read_elm327_response(); Serial.print(s1[2]); Serial.print(raw_ELM327_response); 
+  Serial.print(u1[2]); Serial.print("\t");                              //Read ELM327's response
   /*WorkingString = raw_ELM327_response.substring(11,13); //Cut A Byte value
   A = strtol(WorkingString.c_str(),NULL,16);            //Convert to integer
   WorkingString = raw_ELM327_response.substring(14,16); //Cut B Byte value  
@@ -275,12 +286,12 @@ void loop(){
   var = (256*A+B)/c1[i];                                //Apply formula
   Serial.print(s1[i]); Serial.print(var); Serial.print(u1[i]); Serial.print("\t");  //Display value and unit (tabulated)
   */
-  }
+  
                                                                             
   //30 sec
-  for(int i=0; i<=l3; i++){
+  for(int i=0; i<=2; i++){
   BTOBD_serial.println(pid30s[i]);                       //Send sensor PID
-  delay(10);                                           //Wait for the ELM327 to acquire
+  delay(200);                                           //Wait for the ELM327 to acquire
   read_elm327_response(); Serial.print(s30[i]); Serial.print(raw_ELM327_response); 
   Serial.print(u30[i]); Serial.print("\t");                              //Read ELM327's response
   /*WorkingString = raw_ELM327_response.substring(11,13); //Cut A Byte value
