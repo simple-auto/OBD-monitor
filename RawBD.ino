@@ -31,7 +31,6 @@
  ******************************/
 
 unsigned long timestamp           = 0;    //to measure time elapsed getting OBD data
-unsigned long timestamp2          = 0;    //to measure time elapsed getting OBD data in while
 unsigned long time_elapsed        = 0;    //to measure time elapsed getting OBD data
 int           time_between_loops  = 1000; //total time elapsed on each iteration in [ms]
 
