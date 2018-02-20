@@ -81,7 +81,7 @@ String s30[]={"Coolant temp: ", "Ambient temp: ", "Distance cleared DTCs: "};
 String u30[]={ " [°C]", " [°C]", " [km]"};
 //String p30[]={5, 70, 49}; //bit position for support check
 
-//((A-p)*q+B)*r/s
+//((A-p)*q+B)*r/s not needed
 
 /*****************************************
  ******** SIM and Cloud Variables ********
