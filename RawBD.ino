@@ -221,7 +221,6 @@ void setup() {
   BTOBD_serial.println("0101");
   delay(1000); 
   read_elm327_response(); 
-  delay(500); 
   //Serial.println(raw_ELM327_response);
   WorkingString = raw_ELM327_response.substring(11,13);   //Cut A Byte value
   A = strtol(WorkingString.c_str(),NULL,16);              //Convert to integer
@@ -273,19 +272,17 @@ void loop(){
   - Apply formula
   - Display value and unit (tabulated)
  ***************************************/
-  timestamp2 = millis();
-  
-while((millis()-timestamp2)<9000){
-  
   timestamp = millis();   //Register initial timestamp
   Serial.print("\n");     //Start new line (do not use println in any print of the loop)
   Serial.print(timestamp); 
   Serial.print("\t[ms]\t");
   
+  //30 sec variables requested every 4 seconds (for filter in case of glitches)         
+  
   //1 sec A byte (Speed and Pressure)
   for(int i=0; i<=1; i++){
   BTOBD_serial.println(pid1s[i]);                       //Send sensor PID
-  delay(200);                                           //Wait for the ELM327 to acquire
+  delay(230);                                           //Wait for the ELM327 to acquire
   read_elm327_response();                               //Read ELM327's response
   //Serial.print(s1[i]); 
   //Serial.print(raw_ELM327_response); 
@@ -298,47 +295,7 @@ while((millis()-timestamp2)<9000){
                                                                             
   //1 sec A and B bytes (RPM)
   BTOBD_serial.println(pid1s[2]);                       //Send sensor PID
-  delay(200);                                           //Wait for the ELM327 to acquire
-  read_elm327_response();                               //Read ELM327's response
-  //Serial.print(s1[2]); Serial.print(raw_ELM327_response); 
-  //Serial.print(u1[2]); Serial.print("\t");                              
-  WorkingString = raw_ELM327_response.substring(11,13); //Cut A Byte value
-  A = strtol(WorkingString.c_str(),NULL,16);            //Convert to integer
-  WorkingString = raw_ELM327_response.substring(14,16); //Cut B Byte value  
-  B = strtol(WorkingString.c_str(),NULL,16);            //Convert to integer    
-  var = (256*A+B)/4;                                //Apply formula
-  Serial.print(s1[2]); Serial.print(var); Serial.print(u1[2]); Serial.print("\t");  //Display value and unit (tabulated)
-  
-  time_elapsed=millis()-timestamp;
-  if(time_between_loops>time_elapsed){
-    delay(time_between_loops-time_elapsed);
-  }
-}//end 1 sec while 
-  
-  timestamp = millis();   //Register initial timestamp
-  Serial.print("\n");     //Start new line (do not use println in any print of the loop)
-  Serial.print(timestamp); 
-  Serial.print("\t[ms]\t");
-  
-  //Request the three 1 sec variables plus another 30 sec variable for second n° 7,5 15 22,5 and 30          
-  
-  //1 sec A byte (Speed and Pressure)
-  for(int i=0; i<=1; i++){
-  BTOBD_serial.println(pid1s[i]);                       //Send sensor PID
-  delay(200);                                           //Wait for the ELM327 to acquire
-  read_elm327_response();                               //Read ELM327's response
-  //Serial.print(s1[i]); 
-  //Serial.print(raw_ELM327_response); 
-  //Serial.print(u1[i]); Serial.print("\t");               
-  WorkingString = raw_ELM327_response.substring(11,13); //Cut A Byte value
-  A = strtol(WorkingString.c_str(),NULL,16);            //Convert to integer
-  var = A;                                              //Apply formula
-  Serial.print(s1[i]); Serial.print(var); Serial.print(u1[i]); Serial.print("\t");  //Display value and unit (tabulated)
-  }
-                                                                            
-  //1 sec A and B bytes (RPM)
-  BTOBD_serial.println(pid1s[2]);                       //Send sensor PID
-  delay(200);                                           //Wait for the ELM327 to acquire
+  delay(230);                                           //Wait for the ELM327 to acquire
   read_elm327_response();                               //Read ELM327's response
   //Serial.print(s1[2]); Serial.print(raw_ELM327_response); 
   //Serial.print(u1[2]); Serial.print("\t");                              
@@ -351,7 +308,7 @@ while((millis()-timestamp2)<9000){
   
   //30 sec
   BTOBD_serial.println(pid30s[j]);                      //Send sensor PID
-  delay(200);                                           //Wait for the ELM327 to acquire
+  delay(230);                                           //Wait for the ELM327 to acquire
   read_elm327_response();                               //Read ELM327's response
   if(j==0 || j==1){
   WorkingString = raw_ELM327_response.substring(11,13); //Cut A Byte value
@@ -414,6 +371,7 @@ while((millis()-timestamp2)<9000){
   if(time_between_loops>time_elapsed){
     delay(time_between_loops-time_elapsed);
   }
+  
 }//loop end
 
 
