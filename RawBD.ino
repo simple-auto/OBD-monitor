@@ -65,17 +65,13 @@ float   ndtc;
 float   var;
 int     j = 0; // 30 sec variable selector
 
-String pidstart[]={"atz", "at sp 0", "0A", "at dp", "at dpn"};
-String start[]={"Reset: ", "Auto protocol: ", "Cleared DTCs: ", "Protocol: ", "Protocol number: "};
-
-
-String supid[]={"0100", "0120", "0140", "0160"}; //Supported PIDs
+String pidstart[]={"atz", "at sp 6"};
+String start[]={"Reset: ", "Set protocol: "};
 
 String pid1s[]={"010D", "0133", "010C"};
 String s1[]={"Speed: ", "Pressure: ", "RPM: "};
 String u1[]={" [km/h]", " [kPa]", " [RPM]"};
 //String p1[]={13, 51, 12}; //bit position for support check
-
 
 String pid30s[]={"0105", "0146", "0131", "at rv"};
 String s30[]={"Coolant temp: ", "Ambient temp: ", "Distance cleared DTCs: ", "Battery voltage: "};
@@ -147,37 +143,14 @@ void setup() {
  *********************/  
 
   //Start 
-  for(int i=0; i<=2; i++){             
+  for(int i=0; i<=1; i++){             
   BTOBD_serial.println(pidstart[i]);          
   delay(1000); 
   read_elm327_response();
   Serial.print(start[i]); Serial.println(raw_ELM327_response);  
   }
-  
-  //Get VIN
-  BTOBD_serial.println("0902");
-  delay(1000); 
-  read_elm327_response(); 
-  delay(500);  
-  Serial.print("VIN: "); Serial.println(raw_ELM327_response);  
-  //VIN Hex to Char
-  
-  //Get supported PIDs
-  for(int i=0; i<=3; i++){             
-  BTOBD_serial.println(supid[i]);          
-  delay(500); 
-  read_elm327_response(); 
-  delay(500); 
-  Serial.print(supid[i]);
-  Serial.print(": "); Serial.println(raw_ELM327_response);  
-    /*for(int j=0; j<=sizeof(raw_ELM327_response); j++){
-    WorkingString = raw_ELM327_response.substring(8,11);
-    A = strtol(WorkingString.c_str(),NULL,2);              //Convert to binary????
-    }*/
-  //sup= //ARMAR concatenar binarios
-  }  
-  
-  //1s
+
+  //1s init
   for(int i=0; i<=2; i++){             
   BTOBD_serial.println(pid1s[i]);          
   delay(500); 
@@ -192,7 +165,7 @@ void setup() {
     //}
   }
   
-  //30s
+  //30s init
   for(int i=0; i<=3; i++){             
   BTOBD_serial.println(pid30s[i]);          
   delay(500);
@@ -206,29 +179,10 @@ void setup() {
     //Serial.println(" Not supported ");
     //}
   }  
- 
-  //Protocol
-  for(int i=3; i<=4; i++){             
-  BTOBD_serial.println(pidstart[i]);          
-  delay(500); 
-  read_elm327_response(); 
-  delay(500);   
-  Serial.print(start[i]); Serial.println(raw_ELM327_response);  
-  }
-  
+
   //Number of DTC codes 
-  BTOBD_serial.println("0101");
-  delay(1000); 
-  read_elm327_response(); 
-  //Serial.println(raw_ELM327_response);
-  WorkingString = raw_ELM327_response.substring(11,13);   //Cut A Byte value
-  A = strtol(WorkingString.c_str(),NULL,16);              //Convert to integer
-  ndtc = A-128;                                           //Apply formula
-  Serial.print("Number of DTCs: ");
-  if(ndtc==-128){
-    ndtc=0;
-  }
-  Serial.println(ndtc); 
+  getnDTC();
+  Serial.print("Number of DTCs: "); Serial.println(ndtc); 
   
   //Get DTC codes  
   if(ndtc>0){
@@ -237,6 +191,7 @@ void setup() {
     read_elm327_response();  //Check delay
     delay(7000); 
     Serial.print("DTC: ");Serial.println(raw_ELM327_response);
+    //get code from look up table
   }
   
 
@@ -281,7 +236,7 @@ void loop(){
   //1 sec A byte (Speed and Pressure)
   for(int i=0; i<=1; i++){
   BTOBD_serial.println(pid1s[i]);                       //Send sensor PID
-  delay(230);                                           //Wait for the ELM327 to acquire
+  delay(240);                                           //Wait for the ELM327 to acquire
   read_elm327_response();                               //Read ELM327's response
   //Serial.print(s1[i]); 
   //Serial.print(raw_ELM327_response); 
@@ -294,7 +249,7 @@ void loop(){
                                                                             
   //1 sec A and B bytes (RPM)
   BTOBD_serial.println(pid1s[2]);                       //Send sensor PID
-  delay(230);                                           //Wait for the ELM327 to acquire
+  delay(240);                                           //Wait for the ELM327 to acquire
   read_elm327_response();                               //Read ELM327's response
   //Serial.print(s1[2]); Serial.print(raw_ELM327_response); 
   //Serial.print(u1[2]); Serial.print("\t");                              
@@ -307,7 +262,7 @@ void loop(){
   
   //30 sec
   BTOBD_serial.println(pid30s[j]);                      //Send sensor PID
-  delay(230);                                           //Wait for the ELM327 to acquire
+  delay(240);                                           //Wait for the ELM327 to acquire
   read_elm327_response();                               //Read ELM327's response
   if(j==0 || j==1){
   WorkingString = raw_ELM327_response.substring(11,13); //Cut A Byte value
@@ -401,3 +356,21 @@ void ELM327_enter_terminal_mode(){
     } //if
   }//while
 }//ELM327_enter_terminal_mode()
+
+void getnDTC(){
+  while(true){
+  BTOBD_serial.println("0101");
+  delay(2000); 
+  read_elm327_response(); 
+  WorkingString = raw_ELM327_response.substring(11,13);   //Cut A Byte value
+  A = strtol(WorkingString.c_str(),NULL,16);              //Convert to integer
+  ndtc = A-128;                                           //Apply formula
+    if(ndtc==-128){
+      ndtc=0; 
+      break;
+    }
+    else if(ndtc>0){
+      break;
+    }
+  }//while
+}
