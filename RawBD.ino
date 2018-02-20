@@ -65,7 +65,7 @@ float   ndtc;
 float   var;
 int     j = 0; // 30 sec variable selector
 
-String pidstart[]={"atz", "at sp 6"};
+String pidstart[]={"atz", "at sp 6"}; //Protocol n°6: ISO 15765-4 11 bits 500 kbaud
 String start[]={"Reset: ", "Set protocol: "};
 
 String pid1s[]={"010D", "0133", "010C"};
@@ -149,36 +149,6 @@ void setup() {
   read_elm327_response();
   Serial.print(start[i]); Serial.println(raw_ELM327_response);  
   }
-
-  //1s init
-  for(int i=0; i<=2; i++){             
-  BTOBD_serial.println(pid1s[i]);          
-  delay(500); 
-  read_elm327_response(); 
-  delay(500); 
-  Serial.print(s1[i]); Serial.println(raw_ELM327_response);  
-    //if(sup.substring(p1[i])==1){ //bitRead
-    //Serial.println(" Supported ");
-    //}
-    //else{
-    //Serial.println(" Not supported ");
-    //}
-  }
-  
-  //30s init
-  for(int i=0; i<=3; i++){             
-  BTOBD_serial.println(pid30s[i]);          
-  delay(500);
-  read_elm327_response(); 
-  delay(500);
-  Serial.print(s30[i]); Serial.println(raw_ELM327_response);  
-    //if(sup.substring(p30[i])==1){ //bitRead
-    //Serial.println(" Supported ");
-    //}
-    //else{
-    //Serial.println(" Not supported ");
-    //}
-  }  
 
   //Number of DTC codes 
   getnDTC();
@@ -373,4 +343,4 @@ void getnDTC(){
       break;
     }
   }//while
-}
+} //Consider abort (break) if it takes too much time
