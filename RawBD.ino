@@ -66,9 +66,9 @@ int     j = 0; // 30 sec variable selector
 String pidstart[]={"atz", "at sp 6"}; //Protocol n°6: ISO 15765-4 11 bits 500 kbaud
 String start[]={"Reset: ", "Set protocol: "};
 
-String pid1s[]={"010D", "010C", "0133"};
-String s1[]={"Speed: ", "RPM: ", "Pressure: "};
-String u1[]={" [km/h]", " [RPM]", " [kPa]"};
+String pid1s[]={"010D", "0133", "010C"};
+String s1[]={"Speed: ", "Pressure: ", "RPM: "};
+String u1[]={" [km/h]", " [kPa]", " [RPM]"};
 //String p1[]={13, 51, 12}; //bit position for support check
 
 String pid30s[]={"0105", "0146", "0131", "at rv"};
@@ -255,10 +255,7 @@ void loop(){
   for(int i=0; i<=1; i++){
   BTOBD_serial.println(pid1s[i]);                       //Send sensor PID
   delay(240);                                           //Wait for the ELM327 to acquire
-  read_elm327_response();                               //Read ELM327's response
-  //Serial.print(s1[i]); 
-  //Serial.print(raw_ELM327_response); 
-  //Serial.print(u1[i]); Serial.print("\t");               
+  read_elm327_response();                               //Read ELM327's response              
   WorkingString = raw_ELM327_response.substring(11,13); //Cut A Byte value
   A = strtol(WorkingString.c_str(),NULL,16);            //Convert to integer
   var = A;                                              //Apply formula
@@ -268,9 +265,7 @@ void loop(){
   //1 sec A and B bytes (RPM)
   BTOBD_serial.println(pid1s[2]);                       //Send sensor PID
   delay(240);                                           //Wait for the ELM327 to acquire
-  read_elm327_response();                               //Read ELM327's response
-  //Serial.print(s1[2]); Serial.print(raw_ELM327_response); 
-  //Serial.print(u1[2]); Serial.print("\t");                              
+  read_elm327_response();                               //Read ELM327's response                              
   WorkingString = raw_ELM327_response.substring(11,13); //Cut A Byte value
   A = strtol(WorkingString.c_str(),NULL,16);            //Convert to integer
   WorkingString = raw_ELM327_response.substring(14,16); //Cut B Byte value  
