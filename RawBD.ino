@@ -50,6 +50,8 @@ String  raw_ELM327_response = ""; //to save OBD's response after sending command
 byte    inData;                   //to parse data received from OBD
 char    inChar;                   //to read OBD's response char-wise
 String  WorkingString="";         //to cut substrings from raw_ELM327_response
+String  fdig;                     //to cut DTC code first digit
+String  cod;                      //to get DTC code
 long    A;                        //to save numeric data gotten from control unit's responses
 long    B;
 //long    C;
@@ -57,10 +59,7 @@ long    B;
 /**************************
  ****** Car Variables *****
  **************************/
-
-//float   temp;              
-//float   rpm;               
-//float   veloc;             
+        
 float   ndtc;
 float   var;
 int     j = 0; // 30 sec variable selector
@@ -160,9 +159,63 @@ void setup() {
     delay(7000); 
     read_elm327_response();  //Check delay
     delay(7000); 
-    Serial.print("DTC: ");Serial.println(raw_ELM327_response);
-    //get code from look up table
-  }
+    //Serial.print("DTC: ");Serial.println(raw_ELM327_response); //Raw response
+    //Get code from look up table
+      for(int j = 9; j <= (ndtc*6+3); j = j+6){                  //Go through every first code digit
+      WorkingString = raw_ELM327_response.substring(j,(j+1));    //Cut first digit  
+      if(WorkingString == "0"){
+          fdig = "P0";        
+        }
+        else if(WorkingString == "1"){
+          fdig = "P1";
+        }
+        else if(WorkingString == "2"){
+          fdig = "P2";
+        }
+        else if(WorkingString == "3"){
+          fdig = "P3";
+        }
+        else if(WorkingString == "4"){
+          fdig = "C0";
+        }
+        else if(WorkingString == "5"){
+          fdig = "C1";
+        }
+        else if(WorkingString == "6"){
+          fdig = "C2";
+        }
+        else if(WorkingString == "7"){
+          fdig = "C3";
+        }
+        else if(WorkingString == "8"){
+          fdig = "B0";
+        }
+        else if(WorkingString == "9"){
+          fdig = "B1";
+        }
+        else if(WorkingString == "A"){         
+          fdig = "B2";
+        }
+        else if(WorkingString == "B"){
+          fdig = "B3";
+        }
+        else if(WorkingString == "C"){
+          fdig = "U0";
+        }
+        else if(WorkingString == "D"){
+          fdig = "U1";
+        }
+        else if(WorkingString == "E"){
+          fdig = "U2";
+        }
+        else if(WorkingString == "F"){
+          fdig = "U3";
+        }
+      cod = fdig + raw_ELM327_response.substring((j+1),(j+2)) + raw_ELM327_response.substring((j+3),(j+5));
+      int n = (j-3)/6;
+      Serial.print("DTC #"); Serial.print(n); Serial.print(": "); Serial.println(cod);
+      }//for
+  }//if
   
 
 } // end set up
