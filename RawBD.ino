@@ -51,7 +51,6 @@ byte    inData;                   //to parse data received from OBD
 char    inChar;                   //to read OBD's response char-wise
 String  WorkingString="";         //to cut substrings from raw_ELM327_response
 String  fdig;                     //to cut DTC code first digit
-String  cod;                      //to get DTC code
 long    A;                        //to save numeric data gotten from control unit's responses
 long    B;
 //long    C;
@@ -67,13 +66,13 @@ int     j = 0; // 30 sec variable selector
 String pidstart[]={"atz", "at sp 6"}; //Protocol n°6: ISO 15765-4 11 bits 500 kbaud
 String start[]={"Reset: ", "Set protocol: "};
 
-String pid1s[]={"010D", "0133", "010C"};
-String s1[]={"Speed: ", "Pressure: ", "RPM: "};
-String u1[]={" [km/h]", " [kPa]", " [RPM]"};
+String pid1s[]={"010D", "010C", "0133"};
+String s1[]={"Speed: ", "RPM: ", "Pressure: "};
+String u1[]={" [km/h]", " [RPM]", " [kPa]"};
 //String p1[]={13, 51, 12}; //bit position for support check
 
 String pid30s[]={"0105", "0146", "0131", "at rv"};
-String s30[]={"Coolant temp: ", "Ambient temp: ", "Distance cleared DTCs: ", "Battery voltage: "};
+String s30[]={"Coolant temp: ", "Ambient temp: ", "Distance DTCs: ", "Battery voltage: "};
 String u30[]={ " [°C]", " [°C]", " [km]", "[V]"};
 //String p30[]={5, 70, 49}; //bit position for support check
 
@@ -211,9 +210,9 @@ void setup() {
         else if(WorkingString == "F"){
           fdig = "U3";
         }
-      cod = fdig + raw_ELM327_response.substring((j+1),(j+2)) + raw_ELM327_response.substring((j+3),(j+5));
+      WorkingString = fdig + raw_ELM327_response.substring((j+1),(j+2)) + raw_ELM327_response.substring((j+3),(j+5));
       int n = (j-3)/6;
-      Serial.print("DTC #"); Serial.print(n); Serial.print(": "); Serial.println(cod);
+      Serial.print("DTC #"); Serial.print(n); Serial.print(": "); Serial.println(WorkingString);
       }//for
   }//if
   
@@ -232,11 +231,11 @@ void loop(){
   //ELM327_enter_terminal_mode();       //Un-comment to access terminal mode for ELM327
   //gprs.serialDebug();                 //Un-comment to access terminal mode for SIM800L
 
-  /*
+  timestamp = millis();   //Register initial timestamp
   Serial.print("\n");     //Start new line (do not use println in any print of the loop)
   Serial.print(timestamp); 
   Serial.print("\t[ms]\t");
-*/  
+
 /***************************************
  ******** Get data from sensors ********
  ***************************************
@@ -249,10 +248,6 @@ void loop(){
   - Apply formula
   - Display value and unit (tabulated)
  ***************************************/
-  timestamp = millis();   //Register initial timestamp
-  Serial.print("\n");     //Start new line (do not use println in any print of the loop)
-  Serial.print(timestamp); 
-  Serial.print("\t[ms]\t");
   
   //30 sec variables requested every 4 seconds (for filter in case of glitches)         
   
