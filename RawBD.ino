@@ -62,8 +62,14 @@ long    B;
 float   ndtc;
 float   var;
 int     j = 0; // 30 sec variable selector
+int     k = 0; // Array element
+int     l = 0; // Array element
+const int     lines = 10; //Quantity of data to store in array
 
-String pidstart[]={"atz", "at sp 6"}; //Protocol n°6: ISO 15765-4 11 bits 500 kbaud
+String var1[lines*3]; //Array for 1 sec variables
+String var30[lines*4]; //Array for 30 sec variables
+
+String pidstart[]={"atz", "at sp 6"}; //Protocol n°6: ISO 15765-4 CAN (11/500)
 String start[]={"Reset: ", "Set protocol: "};
 
 String pid1s[]={"010D", "0133", "010C"};
@@ -260,6 +266,7 @@ void loop(){
   A = strtol(WorkingString.c_str(),NULL,16);            //Convert to integer
   var = A;                                              //Apply formula
   Serial.print(s1[i]); Serial.print(var); Serial.print(u1[i]); Serial.print("\t");  //Display value and unit (tabulated)
+  var1[k+i]=var;
   }
                                                                             
   //1 sec A and B bytes (RPM)
@@ -272,7 +279,8 @@ void loop(){
   B = strtol(WorkingString.c_str(),NULL,16);            //Convert to integer    
   var = (256*A+B)/4;                                //Apply formula
   Serial.print(s1[2]); Serial.print(var); Serial.print(u1[2]); Serial.print("\t");  //Display value and unit (tabulated)
-  
+  var1[k+2]=var;
+        
   //30 sec
   BTOBD_serial.println(pid30s[j]);                      //Send sensor PID
   delay(240);                                           //Wait for the ELM327 to acquire
@@ -293,14 +301,25 @@ void loop(){
   var = raw_ELM327_response.toFloat();
   }
   Serial.print(s30[j]); Serial.print(var); Serial.print(u30[j]); Serial.print("\t");
-  
+  var30[l]=var;
+        
   j++;
   if(j==4){
   j=0;
   }
+  
+  k=k+3;
+  if(k==lines*3){
+  k=0;
+  }
+        
+  l++;
+  if(l==lines*4){
+  l=0;
+  }
+        
   //BTOBD_serial.end();
-  
-  
+    
   /************************************
    ****** Send data to the cloud ******
    ************************************/
