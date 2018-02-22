@@ -309,13 +309,13 @@ void loop(){
   }
   
   k=k+3;
-  if(k==lines*3){
-  k=0;
+  if(k==lines*3){ //Filled array -> Send
+  k=0;            //Reset position for re-fill with 10 ("lines" qty) next values for each 1s variable
   }
         
   l++;
-  if(l==lines*4){
-  l=0;
+  if(l==lines*4){ //Filled array -> Send
+  l=0;            //Reset position for re-fill with 10 ("lines" qty) next values for each 30s variable
   }
         
   //BTOBD_serial.end();
