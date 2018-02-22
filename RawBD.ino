@@ -283,6 +283,7 @@ void loop(){
   var = A-40;                                           //Apply formula  
   }
   else if(j==2){
+  WorkingString = raw_ELM327_response.substring(11,13); //Cut A Byte value
   A = strtol(WorkingString.c_str(),NULL,16);            //Convert to integer
   WorkingString = raw_ELM327_response.substring(14,16); //Cut B Byte value  
   B = strtol(WorkingString.c_str(),NULL,16);            //Convert to integer  
