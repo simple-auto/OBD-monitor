@@ -53,21 +53,20 @@ String  WorkingString="";         //to cut substrings from raw_ELM327_response
 String  fdig;                     //to cut DTC code first digit
 long    A;                        //to save numeric data gotten from control unit's responses
 long    B;
-//long    C;
 
 /**************************
  ****** Car Variables *****
  **************************/
         
-float   ndtc;
-float   var;
-int     j = 0; // 30 sec variable selector
-int     k = 0; // Array element
-int     l = 0; // Array element
-const int     lines = 10; //Quantity of data to store in array
+float   ndtc;                   // Number of DTCs
+float   var;                    // elm327 response after equation
+int     j = 0;                  // 30 sec variable selector
+int     k = 0;                  // Array element (Speed, Pressure, RPM)
+int     l = 0;                  // Array element (Coolant temp
+const int     lines = 10;       // (Array size)/(n° of variables per second)
 
-String var1[lines*3]; //Array for 1 sec variables
-String var30[lines*4]; //Array for 30 sec variables
+String var1[lines*3];           //Array for 1 sec variables
+String var30[lines*4];          //Array for 30 sec variables
 
 String pidstart[]={"atz", "at sp 6"}; //Protocol n°6: ISO 15765-4 CAN (11/500)
 String start[]={"Reset: ", "Set protocol: "};
