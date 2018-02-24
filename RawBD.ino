@@ -58,15 +58,15 @@ long    B;
  ****** Car Variables *****
  **************************/
         
-float   ndtc;                   // Number of DTCs
+int     ndtc;                   // Number of DTCs
 float   var;                    // elm327 response after equation
 int     j = 0;                  // 30 sec variable selector
 int     k = 0;                  // Array element (Speed, Pressure, RPM)
 int     l = 0;                  // Array element (Coolant temp
-const int     lines = 10;       // (Array size)/(n° of variables per second)
+const int     lines = 10;       // Fot array size
 
-String var1[lines*3];           //Array for 1 sec variables
-String var30[lines*4];          //Array for 30 sec variables
+float var1[lines*3];           //Array for 1 sec variables
+float var30[lines*4];          //Array for 30 sec variables
 
 String pidstart[]={"atz", "at sp 6"}; //Protocol n°6: ISO 15765-4 CAN (11/500)
 String start[]={"Reset: ", "Set protocol: "};
@@ -159,6 +159,7 @@ void setup() {
   
   //Get DTC codes  
   if(ndtc>0){
+    String DTC[ndtc];
     BTOBD_serial.println("03");           //Request Mode 03 (List of DTCs)
     delay(7000); 
     read_elm327_response();  //Check delay
@@ -218,10 +219,17 @@ void setup() {
       WorkingString = fdig + raw_ELM327_response.substring((j+1),(j+2)) + raw_ELM327_response.substring((j+3),(j+5));
       int n = (j-3)/6;
       Serial.print("DTC #"); Serial.print(n); Serial.print(": "); Serial.println(WorkingString);
+      DTC[n-1]=WorkingString;
       }//for
-  }//if
   
-
+  //Show DTCs stored in array
+  for(int i=0; i<=(ndtc-1); i++){
+  Serial.print(DTC[i]); Serial.print(";");
+  delay(1);
+  }
+  Serial.print("\n");
+  
+  }//if
 } // end set up
 
 void loop(){
@@ -307,14 +315,24 @@ void loop(){
   j=0;
   }
   
-  k=k+3;
-  if(k==lines*3){ //Filled array -> Send
-  k=0;            //Reset position for re-fill with 10 ("lines" qty) next values for each 1s variable
+   k=k+3;
+  if(k>=lines*3){ //Filled array -> Send
+  Serial.print("\n"); 
+  for(int i=0; i<=(lines*3-1); i++){
+  Serial.print(var1[i]); Serial.print(";");
+  delay(1);
+  }
+  k=0;            //Reset position for re-fill with ("lines" qty) next values for each 1s variable
   }
         
   l++;
-  if(l==lines*4){ //Filled array -> Send
-  l=0;            //Reset position for re-fill with 10 ("lines" qty) next values for each 30s variable
+  if(l>=lines*4){ //Filled array -> Send
+  Serial.print("\n");
+  for(int i=0; i<=(lines*4-1); i++){
+  Serial.print(var30[i]); Serial.print(";");
+  delay(1);
+  }
+  l=0;            //Reset position for re-fill with ("lines" qty) next values for each 30s variable
   }
         
   //BTOBD_serial.end();
