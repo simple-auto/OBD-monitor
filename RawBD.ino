@@ -25,18 +25,21 @@
 
 //#include <gprs.h>
 #include <SoftwareSerial.h>
+#include <ArduinoJson.h>
 
 /*******************************
  ****** Runtime Variables ******
  ******************************/
 
+
 unsigned long timestamp           = 0;    //to measure time elapsed getting OBD data
 unsigned long time_elapsed        = 0;    //to measure time elapsed getting OBD data
-int           time_between_loops  = 1000; //total time elapsed on each iteration in [ms]
+int           time_between_loops  = 500; //total time elapsed on each iteration in [ms]
 
 #define baud_serial0 9600           //Serial inncluded in arduino
 //#define baud_serial1 9600           //SIM
 #define baud_serial2 38400          //BT-OBD
+//#define baud_serial2 9600
 
 //SoftwareSerial SIM_serial(8,7);     //SIM
 SoftwareSerial BTOBD_serial(2,3);   //BT-OBD
@@ -51,6 +54,7 @@ byte    inData;                   //to parse data received from OBD
 char    inChar;                   //to read OBD's response char-wise
 String  WorkingString="";         //to cut substrings from raw_ELM327_response
 String  fdig;                     //to cut DTC code first digit
+String  dummy;
 long    A;                        //to save numeric data gotten from control unit's responses
 long    B;
 
@@ -60,29 +64,21 @@ long    B;
         
 int     ndtc;                   // Number of DTCs
 float   var;                    // elm327 response after equation
-int     j = 0;                  // 30 sec variable selector
-int     k = 0;                  // Array element (Speed, Pressure, RPM)
-int     l = 0;                  // Array element (Coolant temp
-const int     lines = 10;       // Fot array size
+int     j = 0;                  // 2 sec variable selector
+int     k = 0;                  // Array element (Coolant temperature, Speed, RPM)
+const int     lines = 30;       // For array size, (lines/second)*(time betwen AWS request)
 
-float var1[lines*3];           //Array for 1 sec variables
-float var30[lines*4];          //Array for 30 sec variables
+float var1[lines*4];           //Array for all variables
 
-String pidstart[]={"atz", "at sp 6"}; //Protocol n°6: ISO 15765-4 CAN (11/500)
+String atstart[]={"atz", "at sp 6"}; //Protocol n°6: ISO 15765-4 CAN (11/500)
 String start[]={"Reset: ", "Set protocol: "};
 
-String pid1s[]={"010D", "0133", "010C"};
-String s1[]={"Speed: ", "Pressure: ", "RPM: "};
-String u1[]={" [km/h]", " [kPa]", " [RPM]"};
-//String p1[]={13, 51, 12}; //bit position for support check
-
-String pid30s[]={"0105", "0146", "0131", "at rv"};
-String s30[]={"Coolant temp: ", "Ambient temp: ", "Distance DTCs: ", "Battery voltage: "};
-String u30[]={ " [°C]", " [°C]", " [km]", "[V]"};
-//String p30[]={5, 70, 49}; //bit position for support check
-
-//((A-p)*q+B)*r/s not needed
-
+String pid1[]={"010D", "010C"};
+String s1[]={"Speed", "RPM"};
+String u1[]={"\t[km/h]\t", "\t[RPM]\t"};
+String pid2[]={"0105", "at rv"};
+String s2[]={"Coolant temp", "Battery volt"};
+String u2[]={"\t[°C]\t", "\t[V]\t"};
 /*****************************************
  ******** SIM and Cloud Variables ********
  *****************************************/
@@ -144,30 +140,35 @@ void setup() {
  /*********************
  *** Initialize ELM327
  *********************/  
-
+ 
   //Start 
   for(int i=0; i<=1; i++){             
-  BTOBD_serial.println(pidstart[i]);          
+  BTOBD_serial.println(atstart[i]);          
   delay(1000); 
   read_elm327_response();
   Serial.print(start[i]); Serial.println(raw_ELM327_response);  
   }
 
   //Number of DTC codes 
-  getnDTC();
+  //getnDTC();
+  ndtc=2; //Test
   Serial.print("Number of DTCs: "); Serial.println(ndtc); 
-  
+
+
   //Get DTC codes  
   if(ndtc>0){
     String DTC[ndtc];
-    BTOBD_serial.println("03");           //Request Mode 03 (List of DTCs)
+    /*BTOBD_serial.println("03");           //Request Mode 03 (List of DTCs)
     delay(7000); 
     read_elm327_response();  //Check delay
     delay(7000); 
+    */
     //Serial.print("DTC: ");Serial.println(raw_ELM327_response); //Raw response
     //Get code from look up table
       for(int j = 9; j <= (ndtc*6+3); j = j+6){                  //Go through every first code digit
-      WorkingString = raw_ELM327_response.substring(j,(j+1));    //Cut first digit  
+      //WorkingString = raw_ELM327_response.substring(j,(j+1));    //Cut first digit 
+      String resp = ">0343 xx 01 33 C0 00 50 00 01 33 C0 00 50 00"; //Test response 
+      WorkingString = resp.substring(j,(j+1));    //Test
       if(WorkingString == "0"){
           fdig = "P0";        
         }
@@ -216,17 +217,33 @@ void setup() {
         else if(WorkingString == "F"){
           fdig = "U3";
         }
-      WorkingString = fdig + raw_ELM327_response.substring((j+1),(j+2)) + raw_ELM327_response.substring((j+3),(j+5));
+      //WorkingString = fdig + raw_ELM327_response.substring((j+1),(j+2)) + raw_ELM327_response.substring((j+3),(j+5));
+      WorkingString = fdig + resp.substring((j+1),(j+2)) + resp.substring((j+3),(j+5)); //Test
       int n = (j-3)/6;
       Serial.print("DTC #"); Serial.print(n); Serial.print(": "); Serial.println(WorkingString);
       DTC[n-1]=WorkingString;
       }//for
   
-  //Show DTCs stored in array
-  for(int i=0; i<=(ndtc-1); i++){
-  Serial.print(DTC[i]); Serial.print(";");
+  //Show DTCs stored in array -> Json -> Send
+  
+ //Create json object
+  StaticJsonBuffer<100> jsonBuffer; //Check size
+  JsonObject& root = jsonBuffer.createObject();
+  //JsonArray& codes = root.createNestedArray("codes");
+  
+  for(int i=0; i<ndtc; i++){
+  /*Serial.print(DTC[i]); Serial.print(";");
   delay(1);
+  codes.add(DTC[i]);*/
+
+  dummy="code "+String(i+1);
+  JsonObject& code = root.createNestedObject(dummy);
+  //code["TN"]= "DataOBD";
+  code["DTC"]=DTC[i];
   }
+  
+  Serial.print("\n");
+  root.prettyPrintTo(Serial); //****(TO SEND)****
   Serial.print("\n");
   
   }//if
@@ -261,80 +278,77 @@ void loop(){
   - Apply formula
   - Display value and unit (tabulated)
  ***************************************/
-  
-  //30 sec variables requested every 4 seconds (for filter in case of glitches)         
-  
-  //1 sec A byte (Speed and Pressure)
-  for(int i=0; i<=1; i++){
-  BTOBD_serial.println(pid1s[i]);                       //Send sensor PID
-  delay(240);                                           //Wait for the ELM327 to acquire
+  var1[k]=timestamp;
+
+  //0.5 sec
+  //Speed
+  BTOBD_serial.println(pid1[0]);                           //Send sensor PID for Coolant temp, speed and RPM (01 05 0d 0c)
+  delay(160);                                           //Wait for the ELM327 to acquire
   read_elm327_response();                               //Read ELM327's response              
   WorkingString = raw_ELM327_response.substring(11,13); //Cut A Byte value
   A = strtol(WorkingString.c_str(),NULL,16);            //Convert to integer
   var = A;                                              //Apply formula
-  Serial.print(s1[i]); Serial.print(var); Serial.print(u1[i]); Serial.print("\t");  //Display value and unit (tabulated)
-  var1[k+i]=var;
-  }
-                                                                            
-  //1 sec A and B bytes (RPM)
-  BTOBD_serial.println(pid1s[2]);                       //Send sensor PID
-  delay(240);                                           //Wait for the ELM327 to acquire
-  read_elm327_response();                               //Read ELM327's response                              
+  Serial.print(s1[0]); Serial.print("\t"); Serial.print(var); Serial.print(u1[0]);  //Display value and unit (tabulated)
+  var1[k+1]=var;
+  
+  //RPM    
+  BTOBD_serial.println(pid1[1]);                           //Send sensor PID for Coolant temp, speed and RPM (01 05 0d 0c)
+  delay(160);                                           //Wait for the ELM327 to acquire
+  read_elm327_response();                               //Read ELM327's response                      
   WorkingString = raw_ELM327_response.substring(11,13); //Cut A Byte value
   A = strtol(WorkingString.c_str(),NULL,16);            //Convert to integer
   WorkingString = raw_ELM327_response.substring(14,16); //Cut B Byte value  
   B = strtol(WorkingString.c_str(),NULL,16);            //Convert to integer    
   var = (256*A+B)/4;                                //Apply formula
-  Serial.print(s1[2]); Serial.print(var); Serial.print(u1[2]); Serial.print("\t");  //Display value and unit (tabulated)
+  Serial.print(s1[1]); Serial.print("\t"); Serial.print(var); Serial.print(u1[1]);  //Display value and unit (tabulated)
   var1[k+2]=var;
-        
-  //30 sec
-  BTOBD_serial.println(pid30s[j]);                      //Send sensor PID
-  delay(240);                                           //Wait for the ELM327 to acquire
+
+  //1 sec
+  BTOBD_serial.println(pid2[j]);                           //Send sensor PID for Coolant temp, speed and RPM (01 05 0d 0c)
+  delay(160);                                           //Wait for the ELM327 to acquire
   read_elm327_response();                               //Read ELM327's response
-  if(j==0 || j==1){
-  WorkingString = raw_ELM327_response.substring(11,13); //Cut A Byte value
-  A = strtol(WorkingString.c_str(),NULL,16);            //Convert to integer
-  var = A-40;                                           //Apply formula  
-  }
-  else if(j==2){
-  WorkingString = raw_ELM327_response.substring(11,13); //Cut A Byte value
-  A = strtol(WorkingString.c_str(),NULL,16);            //Convert to integer
-  WorkingString = raw_ELM327_response.substring(14,16); //Cut B Byte value  
-  B = strtol(WorkingString.c_str(),NULL,16);            //Convert to integer  
-  var = A*256+B;                                        //Apply formula
-  }
-  else{
-  var = raw_ELM327_response.toFloat();
-  }
-  Serial.print(s30[j]); Serial.print(var); Serial.print(u30[j]); Serial.print("\t");
-  var30[l]=var;
-        
-  j++;
-  if(j==4){
-  j=0;
-  }
   
-   k=k+3;
-  if(k>=lines*3){ //Filled array -> Send
+  if(j==0){
+  //Coolant temperature
+  WorkingString = raw_ELM327_response.substring(11,13); //Cut A Byte value
+  A = strtol(WorkingString.c_str(),NULL,16);            //Convert to integer
+  var = A-40;
+  }
+  else if(j==1){
+  //Voltage
+  WorkingString = raw_ELM327_response.substring(6,10); //Cut voltage value 
+  var = WorkingString.toFloat();
+  }
+  Serial.print(s2[j]); Serial.print("\t"); Serial.print(var); Serial.print(u2[j]);
+  var1[k+3]=var;   
+  
+  j++;
+  if(j==2){
+  j=0;
+  }   
+
+  //First filter with 3 lines stored
+  
+  k=k+4; //new line position in array
+  if(k>=lines*4){ //Filled array -> write to Json -> Send
   Serial.print("\n"); 
-  for(int i=0; i<=(lines*3-1); i++){
-  Serial.print(var1[i]); Serial.print(";");
+  for(int i=0; i<=(lines*4-1); i++){
+  Serial.print(var1[i]); Serial.print(", ");   //Show stored data
   delay(1);
   }
   k=0;            //Reset position for re-fill with ("lines" qty) next values for each 1s variable
   }
-        
+  /*      
   l++;
   if(l>=lines*4){ //Filled array -> Send
   Serial.print("\n");
   for(int i=0; i<=(lines*4-1); i++){
-  Serial.print(var30[i]); Serial.print(";");
+  Serial.print(var30[i]); Serial.print(" ");  //Show stored data
   delay(1);
   }
   l=0;            //Reset position for re-fill with ("lines" qty) next values for each 30s variable
   }
-        
+  */      
   //BTOBD_serial.end();
     
   /************************************
