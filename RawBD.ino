@@ -37,12 +37,11 @@ unsigned long time_elapsed        = 0;    //to measure time elapsed getting OBD 
 int           time_between_loops  = 500; //total time elapsed on each iteration in [ms]
 
 #define baud_serial0 9600           //Serial inncluded in arduino
-//#define baud_serial1 9600           //SIM
 #define baud_serial2 38400          //BT-OBD
 //#define baud_serial2 9600
 
-//SoftwareSerial SIM_serial(8,7);     //SIM
 SoftwareSerial BTOBD_serial(2,3);   //BT-OBD
+GPRS SIM800L;                          //SIM808 object
 
 /********************************
  ****** Temporary Variables *****
@@ -89,7 +88,6 @@ String WriteAPIKey = "AEYR0MF2O3Y512QQ";  //Thingspeak channel key to write data
 //String channel_ID = "369437";             //Thingspeak channel ID
 String thingspeak_command = "";           //GET command with fields data (defined after getting OBD data)
 //char buffer[512];   
-GPRS gprs;                                //SIM808 object
 //boolean connectivity = false;             //to attempt connection to the cloud or skip and work oflin
 */
 
@@ -103,28 +101,28 @@ void setup() {
   /*** Begin serial: */
   Serial.begin(baud_serial0);       
   Serial.println("Initializing Cloud Car Monitor System");
-  //SIM_serial.begin(baud_serial1);
-  //gprs.serialDebug();
+
+  //SIM800L.serialDebug();
   /*
-  gprs.preInit();
-  while(0 != gprs.init()) {
+  SIM800L.preInit();
+  while(0 != SIM800L.init()) {
      delay(1000);
      Serial.println("2G initialization error. Check SIM card.");
   }
   */
   
 /*
-  gprs.sendCmdAndWaitForResp("AT+CFUN=1\r\n","OK",DEFAULT_TIMEOUT);
+  SIM800L.sendCmdAndWaitForResp("AT+CFUN=1\r\n","OK",DEFAULT_TIMEOUT);
   delay(1000);
-  gprs.sendCmdAndWaitForResp("AT+CGATT?\r\n","OK",DEFAULT_TIMEOUT);
-  gprs.sendCmd("AT+CIPSTATUS\r\n");
+  SIM800L.sendCmdAndWaitForResp("AT+CGATT?\r\n","OK",DEFAULT_TIMEOUT);
+  SIM800L.sendCmd("AT+CIPSTATUS\r\n");
   delay(1000);
-  gprs.sendCmd("AT+CSTT=\"BAM.ENTELPCS.CL\",\"ENTELPCS\",\"ENTELPCS\"\r\n");
+  SIM800L.sendCmd("AT+CSTT=\"BAM.ENTELPCS.CL\",\"ENTELPCS\",\"ENTELPCS\"\r\n");
   delay(1000);
-  gprs.sendCmdAndWaitForResp("AT+CIICR\r\n","OK",DEFAULT_TIMEOUT);
-  gprs.sendCmd("AT+CIFSR\r\n");
+  SIM800L.sendCmdAndWaitForResp("AT+CIICR\r\n","OK",DEFAULT_TIMEOUT);
+  SIM800L.sendCmd("AT+CIFSR\r\n");
   delay(1000);
-  //char* IP = gprs.getIPAddress();
+  //char* IP = SIM800L.getIPAddress();
 
   Serial.println("2G Initialized.");
   //Serial.println(IP);
@@ -259,7 +257,7 @@ void loop(){
   //(do not use println in the loop)
   
   //ELM327_enter_terminal_mode();       //Un-comment to access terminal mode for ELM327
-  //gprs.serialDebug();                 //Un-comment to access terminal mode for SIM800L
+  //SIM800L.serialDebug();                 //Un-comment to access terminal mode for SIM800L
 
   timestamp = millis();   //Register initial timestamp
   Serial.print("\n");     //Start new line (do not use println in any print of the loop)
@@ -356,9 +354,9 @@ void loop(){
    ************************************/
   
   /*
-  GPRS gprs;
+  GPRS SIM800L;
   delay(1000);
-  if(0 == gprs.connectTCP(server, 80)){
+  if(0 == SIM800L.connectTCP(server, 80)){
       //Serial.print("Connect successfuly to ");
       //Serial.println(server);
   }
@@ -369,17 +367,17 @@ void loop(){
   //Serial.println("command="+thingspeak_command);
   char* http_cmd = const_cast<char*>(thingspeak_command.c_str()); //Parse command to char array
 
-  if(0 == gprs.sendTCPData(http_cmd)){
-    //gprs.serialDebug();
+  if(0 == SIM800L.sendTCPData(http_cmd)){
+    //SIM800L.serialDebug();
     char fin_get[] = "CLOSED\n";
-    gprs.waitForResp(fin_get,5);
+    SIM800L.waitForResp(fin_get,5);
     Serial.println("Sent");
   }
   else{
     Serial.println("Not sent");
   }
 
-  gprs.serialSIM800.end();
+  SIM800L.serialSIM800.end();
   delay(1000);
   BTOBD_serial.begin(baud_serial2);
   */
