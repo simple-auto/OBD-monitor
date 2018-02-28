@@ -10,7 +10,7 @@
  * Collaborators:
  * Vicente Matus
  * Andres Astudillo
- *
+ * Felipe Silva
  * 
  * 
  * OBD-II -- ELM327 -- BT -- BT -- NANO -- SIM800L
