@@ -23,7 +23,7 @@
  ****** Libraries ******
  ***********************/
 
-//#include <gprs.h>
+#include <gprs.h>
 #include <SoftwareSerial.h>
 #include <ArduinoJson.h>
 
@@ -81,15 +81,12 @@ String u2[]={"\t[°C]\t", "\t[V]\t"};
 /*****************************************
  ******** SIM and Cloud Variables ********
  *****************************************/
-/*
-#define DEFAULT_TIMEOUT     5
-char server[] = "api.thingspeak.com";     //Server's address
-String WriteAPIKey = "AEYR0MF2O3Y512QQ";  //Thingspeak channel key to write data
-//String channel_ID = "369437";             //Thingspeak channel ID
-String thingspeak_command = "";           //GET command with fields data (defined after getting OBD data)
-//char buffer[512];   
-//boolean connectivity = false;             //to attempt connection to the cloud or skip and work oflin
-*/
+
+char server[] = "69xelk291c.execute-api.us-west-2.amazonaws.com";     //Server's address
+String thingspeak_command = "";           //POST command with fields data (defined after getting OBD data)
+String headers = "Host: 69xelk291c.execute-api.us-west-2.amazonaws.com \n Content-Type: application/json \n X-Amz-Date: 20180226T230303Z \n Authorization: AWS4-HMAC-SHA256 Credential=AKIAIZ3AHYRVVR4WPTZA/20180226/us-west-2/execute-api/aws4_request, SignedHeaders=content-length;content-type;host;x-amz-date, Signature=dbbc3cee46af480843b1655cd6c77d081cf8d6e2770f727050f3b0279852633";
+String jprueba = "{\"arreglo1\": {\"TableName\": \"DataOBD\",\"Item\": {\"dataId\" : \"4\",\"Vel\ocidad\": \"90\",\"RPM\": \"90\",\"Voltaje\": \"14\"}},\"arreglo2\": {\"TableName\": \"DataOBD\",\"Item\": {\"dataId\" : \"5\",\"Velocidad\": \"90\",\"RPM\": \"90\",\"Voltaje\": \"14\"}}}";
+
 
 void setup() {
   /*****************************************
