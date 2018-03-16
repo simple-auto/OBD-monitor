@@ -25,7 +25,7 @@
  ****** Libraries ******
  ***********************/
 
-//#include <gprs.h>
+#include <gprs.h>
 #include <SoftwareSerial.h>
 
 /*******************************
@@ -109,16 +109,27 @@ String u2[]={"\t[Celsius]\t", "\t[V]\t"};
 /*****************************************
  ******** SIM and Cloud Variables ********
  *****************************************/
-/*
+
 #define DEFAULT_TIMEOUT     5
-char server[] = "api.thingspeak.com";     //Server's address
-String WriteAPIKey = "AEYR0MF2O3Y512QQ";  //Thingspeak channel key to write data
-//String channel_ID = "369437";             //Thingspeak channel ID
-String thingspeak_command = "";           //GET command with fields data (defined after getting OBD data)
-//char buffer[512];   
+char server[] = "REPLACE WHEN LOADING TO ARDUINO";     //Server's address
+int port = 0000; //REPLACE WHEN LOADING TO ARDUINO
 GPRS gprs;                                //SIM808 object
 //boolean connectivity = false;             //to attempt connection to the cloud or skip and work oflin
+//char buffer[512];
+
+/*******Thingspeak Mode*******
+char server[] = "api.thingspeak.com";     //Server's address
+String WriteAPIKey = "REPLACE WHEN LOADING TO ARDUINO";  //Thingspeak channel key to write data
+String channel_ID = "REPLACE WHEN LOADING TO ARDUINO";             //Thingspeak channel ID
+String thingspeak_command = "";           //GET command with fields data (defined after getting OBD data)
 */
+
+/*******Amazon JSON Mode*******
+char message_to_server[] = "";           //POST command with fields data (defined after getting OBD data)
+char headers[] = "Host: REPLACE WHEN LOADING TO ARDUINO \n Content-Type: application/json \n X-Amz-Date: 20180226T230303Z \n Authorization: AWS4-HMAC-SHA256 Credential=AKIAIZ3AHYRVVR4WPTZA/20180226/us-west-2/execute-api/aws4_request, SignedHeaders=content-length;content-type;host;x-amz-date, Signature=dbbc3cee46af480843b1655cd6c77d081cf8d6e2770f727050f3b0279852633";
+char jprueba[] = "{\"arreglo1\": {\"TableName\": \"DataOBD\",\"Item\": {\"dataId\" : \"4\",\"Vel\ocidad\": \"90\",\"RPM\": \"90\",\"Voltaje\": \"14\"}},\"arreglo2\": {\"TableName\": \"DataOBD\",\"Item\": {\"dataId\" : \"5\",\"Velocidad\": \"90\",\"RPM\": \"90\",\"Voltaje\": \"14\"}}}";
+*/
+
 
 void setup() {
   /*****************************************
@@ -132,20 +143,20 @@ void setup() {
   Serial.println("Initializing Cloud Car Monitor System");
   //SIM_serial.begin(baud_serial1);
   //gprs.serialDebug();
-  /*
+  
   gprs.preInit();
   while(0 != gprs.init()) {
      delay(1000);
      Serial.println("2G initialization error. Check SIM card.");
   }
-  */
   
-/*
+  
   gprs.sendCmdAndWaitForResp("AT+CFUN=1\r\n","OK",DEFAULT_TIMEOUT);
   delay(1000);
   gprs.sendCmdAndWaitForResp("AT+CGATT?\r\n","OK",DEFAULT_TIMEOUT);
   gprs.sendCmd("AT+CIPSTATUS\r\n");
   delay(1000);
+  //REPLACE APN, USERNAME, AND PASSWORD
   gprs.sendCmd("AT+CSTT=\"BAM.ENTELPCS.CL\",\"ENTELPCS\",\"ENTELPCS\"\r\n");
   delay(1000);
   gprs.sendCmdAndWaitForResp("AT+CIICR\r\n","OK",DEFAULT_TIMEOUT);
@@ -154,6 +165,7 @@ void setup() {
   //char* IP = gprs.getIPAddress();
 
   Serial.println("2G Initialized.");
+  gprs.serialSIM800.end();
   //Serial.println(IP);
   
  /******************************
@@ -572,19 +584,18 @@ void loop(){
     
   m=0;            //Reset position for re-fill time array
     
-  }//if
-      
   
-  //BTOBD_serial.end();
+     
+
     
   /************************************
    ****** Send data to the cloud ******
    ************************************/
+  BTOBD_serial.end();  
   
-  /*
   GPRS gprs;
   delay(1000);
-  if(0 == gprs.connectTCP(server, 80)){
+  if(0 == gprs.connectTCP(server, port)){
       //Serial.print("Connect successfuly to ");
       //Serial.println(server);
   }
@@ -608,14 +619,14 @@ void loop(){
   gprs.serialSIM800.end();
   delay(1000);
   BTOBD_serial.begin(baud_serial2);
-  */
-  
- 
+  }//if
+        
+  else{
   time_elapsed=millis()-timestamp;
   if(time_between_loops>time_elapsed){
     delay(time_between_loops-time_elapsed);
   }
-  
+  }
 }//loop end
 
 
