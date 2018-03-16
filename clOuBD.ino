@@ -110,6 +110,13 @@ String u2[]={"\t[Celsius]\t", "\t[V]\t"};
  ******** SIM and Cloud Variables ********
  *****************************************/
 
+String V = "";
+String N = "";
+String T = "";
+String D = "";
+String C = "";
+String Bat = "";
+
 #define DEFAULT_TIMEOUT     5
 char server[] = "REPLACE WHEN LOADING TO ARDUINO";     //Server's address
 int port = 0000; //REPLACE WHEN LOADING TO ARDUINO
@@ -140,14 +147,14 @@ void setup() {
   
   /*** Begin serial: */
   Serial.begin(baud_serial0);       
-  Serial.println("Initializing Cloud Car Monitor System");
+  //Serial.println("Initializing Cloud Car Monitor System");
   //SIM_serial.begin(baud_serial1);
   //gprs.serialDebug();
   
   gprs.preInit();
   while(0 != gprs.init()) {
      delay(1000);
-     Serial.println("2G initialization error. Check SIM card.");
+     //Serial.println("2G initialization error. Check SIM card.");
   }
   
   
@@ -164,7 +171,7 @@ void setup() {
   delay(1000);
   //char* IP = gprs.getIPAddress();
 
-  Serial.println("2G Initialized.");
+  //Serial.println("2G Initialized.");
   gprs.serialSIM800.end();
   //Serial.println(IP);
   
@@ -172,9 +179,9 @@ void setup() {
  *** Initialize Bluetooth HC 05
  ******************************/  
   BTOBD_serial.begin(baud_serial2);
-  Serial.println("Bluetooth communication to ELM327 Initialized");
+  //Serial.println("Bluetooth communication to ELM327 Initialized");
   
-  //ELM327_enter_terminal_mode(); /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  //ELM327_enter_terminal_mode();
   
  /*********************
  *** Initialize ELM327
@@ -190,7 +197,7 @@ void setup() {
   break;
   }
   }
-  Serial.print("Reset: "); Serial.println(raw_ELM327_response); 
+  //Serial.print("Reset: "); Serial.println(raw_ELM327_response); 
 
   while(true){
   BTOBD_serial.println("at sp 6"); //Protocol n°6: ISO 15765-4 CAN (11/500)
@@ -200,7 +207,7 @@ void setup() {
   break;
   }
   }
-  Serial.print("Set protocol: "); Serial.println(raw_ELM327_response); 
+  //Serial.print("Set protocol: "); Serial.println(raw_ELM327_response); 
 
   //Number of DTC codes                                     Try 0101 in terminal and see (if) different responses
 
@@ -334,9 +341,9 @@ void loop(){
   //gprs.serialDebug();                 //Un-comment to access terminal mode for SIM800L
 
   timestamp = millis();   //Register initial timestamp
-  Serial.print("\n");     //Start new line (do not use println in any print of the loop)
-  Serial.print(timestamp); 
-  Serial.print("\t[ms]\t");
+  //Serial.print("\n");     //Start new line (do not use println in any print of the loop)
+  //Serial.print(timestamp); 
+  //Serial.print("\t[ms]\t");
 
 /***************************************
  ******** Get data from sensors ********
@@ -359,7 +366,7 @@ void loop(){
   WorkingString = raw_ELM327_response.substring(11,13); //Cut A Byte value
   A = strtol(WorkingString.c_str(),NULL,16);            //Convert to integer
   var = A;                                              //Apply formula
-  Serial.print(var); Serial.print("\t[km/h]\t");        //Display value and unit (tabulated)
+  //Serial.print(var); Serial.print("\t[km/h]\t");        //Display value and unit (tabulated)
   vtemp[k]=var;
   
   //RPM    
@@ -371,7 +378,7 @@ void loop(){
   WorkingString = raw_ELM327_response.substring(14,16); //Cut B Byte value  
   B = strtol(WorkingString.c_str(),NULL,16);            //Convert to integer    
   var = (256*A+B)/4;                                    //Apply formula
-  Serial.print(var); Serial.print("\t[RPM]\t");               //Display value and unit (tabulated)
+  //Serial.print(var); Serial.print("\t[RPM]\t");               //Display value and unit (tabulated)
   ntemp[k]=var;
 
   //2 sec
@@ -395,7 +402,7 @@ void loop(){
   btemp[l]= var*10;
   l++;
   }
-  Serial.print(var); Serial.print(u2[j]);
+  //Serial.print(var); Serial.print(u2[j]);
   
   tsnd[m]=int(timestamp/1000)-1; //get timestamp every 1 sec    
   m++;
@@ -540,53 +547,27 @@ void loop(){
   }//if
   
   if(m==(lines)){       //Filled array in all positions 0 to lines-1 -> write Json -> Send
-  Serial.print("\n"); 
-  Serial.print("T");
-  Serial.print("\t"); 
+  T = "\tT\t";
   for(int i=0; i<(lines); i++){
-  Serial.print(tsnd[i]); Serial.print(" "); 
+      T += tsnd[i] + " "; 
   }
-  Serial.print("\n");
-  Serial.print("V"); 
-  Serial.print("\t"); 
+  V = "\tV\t";
   for(int i=0; i<(lines); i++){
-  Serial.print(vsnd[i]); Serial.print(" ");
+      V += vsnd[i] + " ";
   }
-  Serial.print("\n");
-  Serial.print("Vraw"); 
-  Serial.print("\t"); 
+  N = "\tN\t";
   for(int i=0; i<(lines); i++){
-  Serial.print(vraw[i]); Serial.print(" ");
+      N += nsnd[i] + " "; 
   }
-  Serial.print("\n");
-  Serial.print("N");
-  Serial.print("\t"); 
-  for(int i=0; i<(lines); i++){
-  Serial.print(nsnd[i]); Serial.print(" ");
-  }
-  Serial.print("\n");
-  Serial.print("Nraw"); 
-  Serial.print("\t"); 
-  for(int i=0; i<(lines); i++){
-  Serial.print(nraw[i]); Serial.print(" ");
-  }
-  Serial.print("\n");
-  Serial.print("D");   //Integrated trip distance
-  Serial.print("\t");
   for(int i=1; i<(lines); i++){
-  dsnd=dsnd+(((vsnd[i]+vsnd[i-1])/7200)*100000); //multplied by 100000 (sent in cm)
+      dsnd=dsnd+(((float(vsnd[i])+float(vsnd[i-1]))/7200)*100000); //multplied by 100000 (sent in cm)
   }
-  Serial.println(dsnd);
-  
-  Serial.print("C"); Serial.print("\t"); Serial.println(csnd);
- 
-  Serial.print("B"); Serial.print("\t"); Serial.println(bsnd);
-    
+  D = "\tD\t"+dsnd;
+  C = "\tC\t"+csnd;        
+  Bat = "\tB\t"+bsnd; 
+          
   m=0;            //Reset position for re-fill time array
-    
-  
-     
-
+   
     
   /************************************
    ****** Send data to the cloud ******
@@ -602,18 +583,22 @@ void loop(){
   else{
       //Serial.println("connect error");
   }
-  thingspeak_command = ("GET /update?api_key="+WriteAPIKey+"&field1="+rpm+"&field2="+veloc+"    HTTP/1.0\r\n\r\n");
+  String payload = V+N+T+C+Bat;
+  char* tcp_payload = const_cast<char*>(payload.c_str()); //Parse payload to char array
+  Serial.println("Message to server=\n"+payload);
+          
+  //thingspeak_command = ("GET /update?api_key="+WriteAPIKey+"&field1="+rpm+"&field2="+veloc+"    HTTP/1.0\r\n\r\n");
   //Serial.println("command="+thingspeak_command);
-  char* http_cmd = const_cast<char*>(thingspeak_command.c_str()); //Parse command to char array
+  //char* http_cmd = const_cast<char*>(thingspeak_command.c_str()); //Parse command to char array
 
-  if(0 == gprs.sendTCPData(http_cmd)){
+  if(0 == gprs.sendTCPData(tcp_payload)){
     //gprs.serialDebug();
-    char fin_get[] = "CLOSED\n";
-    gprs.waitForResp(fin_get,5);
-    Serial.println("Sent");
+    //char fin_get[] = "CLOSED\n";
+    //gprs.waitForResp(fin_get,5);
+    Serial.println("\nSent");
   }
   else{
-    Serial.println("Not sent");
+    Serial.println("\nNot sent");
   }
 
   gprs.serialSIM800.end();
@@ -643,11 +628,11 @@ void read_elm327_response(){
   //Serial.println(raw_ELM327_response);
 }
 
-
+/*
 void ELM327_enter_terminal_mode(){
   /**Debug HC05 Bluetooth and ELM327 OBD
    * *  Captures serial2 data and writes input to it.
-  */
+  *
   while(true){
     if (BTOBD_serial.available()){
       Serial.write(BTOBD_serial.read());
@@ -657,3 +642,4 @@ void ELM327_enter_terminal_mode(){
     } //if
   }//while
 }//ELM327_enter_terminal_mode()
+*/
