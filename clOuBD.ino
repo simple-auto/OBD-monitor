@@ -110,6 +110,7 @@ String u2[]={"\t[Celsius]\t", "\t[V]\t"};
  ******** SIM and Cloud Variables ********
  *****************************************/
 
+String DTCnd = "";
 String V = "";
 String N = "";
 String T = "";
@@ -227,11 +228,12 @@ void setup() {
     }
   }//while
   //ndtc=3; //Test
-  Serial.print("Number of DTCs: "); Serial.println(ndtc); 
+  //Serial.print("Number of DTCs: "); Serial.println(ndtc); 
+  DTCnd+="Num DTCs: "+ndtc;
 
   //Get DTC codes  
   if(ndtc>0){
-    String DTC[ndtc];
+    //String DTC[ndtc];
     BTOBD_serial.println("03");           //Request Mode 03 (List of DTCs)
     delay(5000); 
     read_elm327_response();  //Check delay
@@ -300,10 +302,46 @@ void setup() {
       //WorkingString = fdig + resp.substring((j+1),(j+2)) + resp.substring((j+3),(j+5));         //Test
       int n = (j-3)/6; //ISO 15765-4 CAN
       //int n = (j)/6; //KWP Fast
-      Serial.print("DTC #"); Serial.print(n); Serial.print(": "); Serial.println(WorkingString);
-      DTC[n-1]=WorkingString;
+      //Serial.print("DTC #"); Serial.print(n); Serial.print(": "); Serial.println(WorkingString);
+      DTCnd+="\t"+WorkingString;
+      //DTC[n-1]=WorkingString;
       }//for
   
+  //SEND DTCs
+  BTOBD_serial.end();  
+  
+  GPRS gprs;
+  delay(1000);
+  if(0 == gprs.connectTCP(server, port)){
+      //Serial.print("Connect successfuly to ");
+      //Serial.println(server);
+  }
+  else{
+      //Serial.println("connect error");
+  }
+  String payload = DTCnd;
+  char* tcp_payload = const_cast<char*>(payload.c_str()); //Parse payload to char array
+  Serial.println("Message to server=\n"+payload);
+          
+  //thingspeak_command = ("GET /update?api_key="+WriteAPIKey+"&field1="+rpm+"&field2="+veloc+"    HTTP/1.0\r\n\r\n");
+  //Serial.println("command="+thingspeak_command);
+  //char* http_cmd = const_cast<char*>(thingspeak_command.c_str()); //Parse command to char array
+
+  if(0 == gprs.sendTCPData(tcp_payload)){
+    //gprs.serialDebug();
+    //char fin_get[] = "CLOSED\n";
+    //gprs.waitForResp(fin_get,5);
+    Serial.println("\nSent");
+  }
+  else{
+    Serial.println("\nNot sent");
+  }
+
+  gprs.serialSIM800.end();
+  delay(1000);
+  BTOBD_serial.begin(baud_serial2);
+  }//if
+          
   //Show DTCs stored in array -> Json -> Send
   /*
   //Create json object
