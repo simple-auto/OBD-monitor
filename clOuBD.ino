@@ -110,6 +110,7 @@ String u2[]={"\t[Celsius]\t", "\t[V]\t"};
  ******** SIM and Cloud Variables ********
  *****************************************/
 
+String payload = "";
 String DTCnd = "";
 String V = "";
 String N = "";
@@ -319,7 +320,7 @@ void setup() {
   else{
       //Serial.println("connect error");
   }
-  String payload = DTCnd;
+  payload = DTCnd;
   char* tcp_payload = const_cast<char*>(payload.c_str()); //Parse payload to char array
   Serial.println("Message to server=\n"+payload);
           
@@ -621,7 +622,7 @@ void loop(){
   else{
       //Serial.println("connect error");
   }
-  String payload = V+N+T+C+Bat;
+  payload = V+N+T+C+Bat;
   char* tcp_payload = const_cast<char*>(payload.c_str()); //Parse payload to char array
   Serial.println("Message to server=\n"+payload);
           
