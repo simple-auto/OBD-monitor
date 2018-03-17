@@ -3,7 +3,8 @@
  * Cloud Car Monitor
  *
  * Revo Project revoproject@terralink.cl
- * Terralink SpA, Santiago, Chile
+ * Terralink SpA,
+ * El Director 6000, San Pascual 300, Santiago, Chile
  * 
  * 
  * 
@@ -13,12 +14,10 @@
  * Felipe Silva
  * 
  * 
- * OBD-II -- ELM327 -- BT -- BT -- NANO -- SIM800L
+ * OBD-II -- ELM327 -- BT -- BT(HC05) -- NANO -- SIM800L -- SERVER
  * 
- * Online Utilities:
- * HEX to Binary: https://www.binaryhexconverter.com/hex-to-binary-converter
  * 
- * One second time sample, plateau filter, spikes filter and exponential filter
+ * Plateau filter, spikes filter and exponential filter (to solve ELM327 glitches)
 */
 
 /***********************
@@ -43,7 +42,6 @@ int           time_response       = 300;  //time to wait for response
 
 //SoftwareSerial SIM_serial(8,7);     //SIM
 SoftwareSerial BTOBD_serial(2,3);   //BT-OBD
-
 
 
 /********************************
@@ -120,8 +118,8 @@ String C = "";
 String Bat = "";
 
 #define DEFAULT_TIMEOUT     5
-char server[] = "162.248.55.95";     //Server's address
-int port = 9002; //REPLACE WHEN LOADING TO ARDUINO
+char server[] = "REPLACE_WHEN_LOADING_TO_ARDUINO";     //Server's address
+int port = 00; //REPLACE WHEN LOADING TO ARDUINO
 GPRS gprs;                                //SIM808 object
 //boolean connectivity = false;             //to attempt connection to the cloud or skip and work oflin
 //char buffer[512];
