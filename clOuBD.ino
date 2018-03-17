@@ -120,8 +120,8 @@ String C = "";
 String Bat = "";
 
 #define DEFAULT_TIMEOUT     5
-char server[] = "REPLACE WHEN LOADING TO ARDUINO";     //Server's address
-int port = 0000; //REPLACE WHEN LOADING TO ARDUINO
+char server[] = "162.248.55.95";     //Server's address
+int port = 9002; //REPLACE WHEN LOADING TO ARDUINO
 GPRS gprs;                                //SIM808 object
 //boolean connectivity = false;             //to attempt connection to the cloud or skip and work oflin
 //char buffer[512];
@@ -166,14 +166,15 @@ void setup() {
   gprs.sendCmd("AT+CIPSTATUS\r\n");
   delay(1000);
   //REPLACE APN, USERNAME, AND PASSWORD
-  gprs.sendCmd("AT+CSTT=\"BAM.ENTELPCS.CL\",\"ENTELPCS\",\"ENTELPCS\"\r\n");
+  gprs.sendCmd("AT+CSTT=\"WEB.TMOVIL.CL\",\"WEB\",\"WEB\"\r\n");
+  //gprs.sendCmd("AT+CSTT=\"BAM.ENTELPCS.CL\",\"ENTELPCS\",\"ENTELPCS\"\r\n");
   delay(1000);
   gprs.sendCmdAndWaitForResp("AT+CIICR\r\n","OK",DEFAULT_TIMEOUT);
   gprs.sendCmd("AT+CIFSR\r\n");
   delay(1000);
   //char* IP = gprs.getIPAddress();
 
-  //Serial.println("2G Initialized.");
+  Serial.println("2G Initialized.");
   gprs.serialSIM800.end();
   //Serial.println(IP);
   
@@ -209,7 +210,7 @@ void setup() {
   break;
   }
   }
-  //Serial.print("Set protocol: "); Serial.println(raw_ELM327_response); 
+  Serial.print("Set protocol: "); Serial.println(raw_ELM327_response); 
 
   //Number of DTC codes                                     Try 0101 in terminal and see (if) different responses
 
@@ -229,7 +230,7 @@ void setup() {
     }
   }//while
   //ndtc=3; //Test
-  //Serial.print("Number of DTCs: "); Serial.println(ndtc); 
+  Serial.print("Number of DTCs: "); Serial.println(ndtc); 
   DTCnd+="Num DTCs: "+ndtc;
 
   //Get DTC codes  
@@ -307,7 +308,7 @@ void setup() {
       DTCnd+="\t"+WorkingString;
       //DTC[n-1]=WorkingString;
       }//for
-  
+  /*
   //SEND DTCs
   BTOBD_serial.end();  
   
@@ -323,10 +324,6 @@ void setup() {
   payload = DTCnd;
   char* tcp_payload = const_cast<char*>(payload.c_str()); //Parse payload to char array
   Serial.println("Message to server=\n"+payload);
-          
-  //thingspeak_command = ("GET /update?api_key="+WriteAPIKey+"&field1="+rpm+"&field2="+veloc+"    HTTP/1.0\r\n\r\n");
-  //Serial.println("command="+thingspeak_command);
-  //char* http_cmd = const_cast<char*>(thingspeak_command.c_str()); //Parse command to char array
 
   if(0 == gprs.sendTCPData(tcp_payload)){
     //gprs.serialDebug();
@@ -341,7 +338,7 @@ void setup() {
   gprs.serialSIM800.end();
   delay(1000);
   BTOBD_serial.begin(baud_serial2);
-  }//if
+  */
           
   //Show DTCs stored in array -> Json -> Send
   /*
@@ -380,8 +377,8 @@ void loop(){
   //gprs.serialDebug();                 //Un-comment to access terminal mode for SIM800L
 
   timestamp = millis();   //Register initial timestamp
-  //Serial.print("\n");     //Start new line (do not use println in any print of the loop)
-  //Serial.print(timestamp); 
+  Serial.print("\n");     //Start new line (do not use println in any print of the loop)
+  Serial.print(timestamp); 
   //Serial.print("\t[ms]\t");
 
 /***************************************
