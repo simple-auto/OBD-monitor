@@ -63,6 +63,7 @@ long    B;
         
 int     ndtc;                   // Number of DTCs
 float   var;                    // elm327 response after equation
+int     i;                      // Used in for
 int     j = 0;                  // 2 sec variable selector
 int     k = 0;                  // Temporary Array element (Speed, RPM) for 10 var
 int     l = 0;                  // Temporary Array element (Coolant temperature, Battery voltage) for 5 var
@@ -102,7 +103,7 @@ int bsnd;                     // battery voltage to send
 unsigned long dsnd = 0;       // trip distance to send in cm
 
 String pid2[]={"0105", "at rv"};
-String u2[]={"\t[Celsius]\t", "\t[V]\t"};
+//String u2[]={"\t[Celsius]\t", "\t[V]\t"};
 
 /*****************************************
  ******** SIM and Cloud Variables ********
@@ -220,6 +221,7 @@ void setup() {
   A = strtol(WorkingString.c_str(),NULL,16);              //Convert to integer
   ndtc = A-128;                                           //Apply formula
     if(ndtc==-128 && raw_ELM327_response.substring(11,13)!="IT"){ //CHECK IN TERMINAL FOR ISO 15765-4
+    //if(ndtc==-128 && raw_ELM327_response.substring(11,13)=="00"){ //CHECK IN TERMINAL
       ndtc=0; 
       break;
     }
@@ -229,11 +231,10 @@ void setup() {
   }//while
   //ndtc=3; //Test
   Serial.print("Number of DTCs: "); Serial.println(ndtc); 
-  DTCnd+="Num DTCs: "+ndtc;
+  DTCnd+="Num DTCs: "+String(ndtc);
 
   //Get DTC codes  
   if(ndtc>0){
-    //String DTC[ndtc];
     BTOBD_serial.println("03");           //Request Mode 03 (List of DTCs)
     delay(5000); 
     read_elm327_response();  //Check delay
@@ -243,12 +244,12 @@ void setup() {
     //Get code from look up table
 
       Serial.print("\n");
-      for(int j = 9; j <= (ndtc*6+3); j = j+6){                  //Go through every first code digit in ISO 15765-4 CAN (11/500)
-      //for(int j = 6; j <= (ndtc*6); j = j+6){
-      WorkingString = raw_ELM327_response.substring(j,(j+1));    //Cut first digit 
+      for(i = 9; i <= (ndtc*6+3); i = i+6){                  //Go through every first code digit in ISO 15765-4 CAN (11/500)
+      //for(i = 6; i <= (ndtc*6); i = i+6){
+      WorkingString = raw_ELM327_response.substring(i,(i+1));    //Cut first digit 
       
       //String resp = ">0343 xx 01 33 C0 00 50 00 01 33 C0 00 50 00"; //Test response Add xx in first byte position for ISO 15765-4
-      //WorkingString = resp.substring(j,(j+1));                   //Test
+      //WorkingString = resp.substring(i,(i+1));                   //Test
       
       if(WorkingString == "0"){
           fdig = "P0";        
@@ -298,13 +299,9 @@ void setup() {
         else if(WorkingString == "F"){
           fdig = "U3";
         }
-      WorkingString = fdig + raw_ELM327_response.substring((j+1),(j+2)) + raw_ELM327_response.substring((j+3),(j+5));
-      //WorkingString = fdig + resp.substring((j+1),(j+2)) + resp.substring((j+3),(j+5));         //Test
-      int n = (j-3)/6; //ISO 15765-4 CAN
-      //int n = (j)/6; //KWP Fast
-      //Serial.print("DTC #"); Serial.print(n); Serial.print(": "); Serial.println(WorkingString);
+      WorkingString = fdig + raw_ELM327_response.substring((i+1),(i+2)) + raw_ELM327_response.substring((i+3),(i+5));
+      //WorkingString = fdig + resp.substring((i+1),(i+2)) + resp.substring((i+3),(i+5));         //Test
       DTCnd+="\t"+WorkingString;
-      //DTC[n-1]=WorkingString;
       }//for
   /*
   //SEND DTCs
@@ -362,6 +359,8 @@ void setup() {
   */
   }//if
 
+Serial.println(DTCnd); //(delete) 
+        
 } // end set up
 
 void loop(){
@@ -450,7 +449,7 @@ void loop(){
   
   if(k==10){ //Filled temporary array, filter, transfer to array to send and reset
     
-    for(int i=0; i<10; i++){
+    for(i=0; i<10; i++){
     vraw[(10*p+i)]=vtemp[i];
     nraw[(10*p+i)]=ntemp[i];
     }
@@ -475,7 +474,7 @@ void loop(){
     }
 
     //Spike Filter rest of the SPEED and RPM array
-    for(int i=1; i<=8; i++){
+    for(i=1; i<=8; i++){
       
     //First filter for 10 SPEED data stored
     if(((vtemp[i-1]-vtemp[i])>dv && (vtemp[i+1]-vtemp[i])>dv) || ((vtemp[i]-vtemp[i-1])>dv && (vtemp[i]-vtemp[i+1])>dv)){
@@ -500,7 +499,7 @@ void loop(){
     }
 
     //Filter Plateau in rest of the SPEED array 
-    for(int i=1; i<=8; i++){
+    for(i=1; i<=8; i++){
       
     //filter for 10 SPEED data stored
     if(((vtemp[i-1]-vtemp[i])>dv && (vtemp[i+1]==vtemp[i]) && (vtemp[i+1]!=0)) || ((vtemp[i]-vtemp[i-1])>dv && (vtemp[i]==vtemp[i+1]))){
@@ -512,7 +511,7 @@ void loop(){
 
     vsnd[10*p]=bv;
     nsnd[10*p]=bn;
-    for(int i=1; i<10; i++){
+    for(i=1; i<10; i++){
     vsnd[(10*p+i)]=a*vsnd[(10*p+i-1)]+b*vtemp[i-1];  // Exponential filter
     //nsnd[(10*p+i)]=a*nsnd[(10*p+i-1)]+b*ntemp[i-1];  //DO NOT USE EXPONENTIAL FILTER IN RPM
     nsnd[(10*p+i)]=ntemp[i-1];
@@ -540,7 +539,7 @@ void loop(){
     if(btemp[0]<10){ //before: btemp[0]==0
     btemp[0]=bb;
     }
-    for(int i=1; i<5; i++){
+    for(i=1; i<5; i++){
     if(ctemp[i]<0){
       ctemp[i]=ctemp[i-1];
     }//if
@@ -560,7 +559,7 @@ void loop(){
     }
     
     //Filter rest of the array
-    for(int i=1; i<=3; i++){
+    for(i=1; i<=3; i++){
     //First filter for 5 coolant temperature data stored
     if(((ctemp[i-1]-ctemp[i])>dc && (ctemp[i+1]-ctemp[i])>dc) || ((ctemp[i]-ctemp[i-1])>dc && (ctemp[i]-ctemp[i+1])>dc)){
     ctemp[i]=(ctemp[i+1]+ctemp[i-1])/2;   
@@ -582,18 +581,18 @@ void loop(){
   
   if(m==(lines)){       //Filled array in all positions 0 to lines-1 -> write Json -> Send
   T = "\tT\t";
-  for(int i=0; i<(lines); i++){
+  for(i=0; i<(lines); i++){
       T += tsnd[i] + " "; 
   }
   V = "\tV\t";
-  for(int i=0; i<(lines); i++){
+  for(i=0; i<(lines); i++){
       V += vsnd[i] + " ";
   }
   N = "\tN\t";
-  for(int i=0; i<(lines); i++){
+  for(i=0; i<(lines); i++){
       N += nsnd[i] + " "; 
   }
-  for(int i=1; i<(lines); i++){
+  for(i=1; i<(lines); i++){
       dsnd=dsnd+(((float(vsnd[i])+float(vsnd[i-1]))/7200)*100000); //multplied by 100000 (sent in cm)
   }
   D = "\tD\t"+dsnd;
