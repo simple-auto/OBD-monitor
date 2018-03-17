@@ -85,21 +85,17 @@ int     ac = 30;
 int     bc = 30;
 int     bb = 12;
 
-//float var1[lines*4];          //Array for all variables
 int vtemp[10];                // temporary array for speed 
 int ntemp[10];                // temporary array for rpm
 int ctemp[5];                 // temporary array for temperature
 int btemp[5];                 // temporary array for voltage
-//float btemp[5];               // temporary array for voltage
 unsigned long tsnd[lines];    // time array to send
-//int tsnd[lines];            // time array to send
 int vsnd[lines];              // speed array to send
 int nsnd[lines];              // rpm array to send
 //int vraw[lines];              // raw speed array 
 //int nraw[lines];              // raw rpm array 
 int csnd;                     // coolant temperature to send
 int bsnd;                     // battery voltage to send
-//float bsnd;                   // battery voltage to send
 unsigned long dsnd = 0;       // trip distance to send in cm
 
 String pid2[]={"0105", "at rv"};
@@ -359,7 +355,7 @@ void setup() {
   */
   }//if
 
-Serial.println(DTCnd); //(delete) 
+Serial.println(DTCnd); //(->DELETE!) 
         
 } // end set up
 
