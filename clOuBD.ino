@@ -95,8 +95,8 @@ unsigned long tsnd[lines];    // time array to send
 //int tsnd[lines];            // time array to send
 int vsnd[lines];              // speed array to send
 int nsnd[lines];              // rpm array to send
-int vraw[lines];              // raw speed array 
-int nraw[lines];              // raw rpm array 
+//int vraw[lines];              // raw speed array 
+//int nraw[lines];              // raw rpm array 
 int csnd;                     // coolant temperature to send
 int bsnd;                     // battery voltage to send
 //float bsnd;                   // battery voltage to send
@@ -582,22 +582,22 @@ void loop(){
   if(m==(lines)){       //Filled array in all positions 0 to lines-1 -> write Json -> Send
   T = "\tT\t";
   for(i=0; i<(lines); i++){
-      T += tsnd[i] + " "; 
+      T += String(tsnd[i]) + " "; 
   }
   V = "\tV\t";
   for(i=0; i<(lines); i++){
-      V += vsnd[i] + " ";
+      V += String(vsnd[i]) + " ";
   }
   N = "\tN\t";
   for(i=0; i<(lines); i++){
-      N += nsnd[i] + " "; 
+      N += String(nsnd[i]) + " "; 
   }
   for(i=1; i<(lines); i++){
       dsnd=dsnd+(((float(vsnd[i])+float(vsnd[i-1]))/7200)*100000); //multplied by 100000 (sent in cm)
   }
-  D = "\tD\t"+dsnd;
-  C = "\tC\t"+csnd;        
-  Bat = "\tB\t"+bsnd; 
+  D = "\tD\t"+String(dsnd);
+  C = "\tC\t"+String(csnd);        
+  Bat = "\tB\t"+String(bsnd); 
           
   m=0;            //Reset position for re-fill time array
    
@@ -616,9 +616,9 @@ void loop(){
   else{
       //Serial.println("connect error");
   }
-  payload = V+N+T+C+Bat;
+  payload = T+V+N+D+C+Bat;
   char* tcp_payload = const_cast<char*>(payload.c_str()); //Parse payload to char array
-  Serial.println("Message to server=\n"+payload);
+  Serial.println("Message to server:\t"+payload);
           
   //thingspeak_command = ("GET /update?api_key="+WriteAPIKey+"&field1="+rpm+"&field2="+veloc+"    HTTP/1.0\r\n\r\n");
   //Serial.println("command="+thingspeak_command);
