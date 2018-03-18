@@ -331,7 +331,7 @@ void setup() {
   gprs.serialSIM800.end();
   delay(1000);
   BTOBD_serial.begin(baud_serial2);
-  */
+ 
           
  
   }//if
