@@ -331,12 +331,12 @@ void setup() {
   gprs.serialSIM800.end();
   delay(1000);
   BTOBD_serial.begin(baud_serial2);
-  */
+
           
  
   }//if
 
-//Serial.println(snd); //(->DELETE!) 
+Serial.println(snd); //(->DELETE!) 
         
 } // end set up
 
@@ -418,7 +418,7 @@ void loop(){
   }
   //Serial.print(var); Serial.print(u2[j]);
   }//if
-  if(m==o){      
+  if(m==0){      
   tsnd=int(timestamp/1000)-1; //get timestamp every 1 sec    
   }
   m++;
@@ -604,13 +604,13 @@ void loop(){
   char* tcp_snd = const_cast<char*>(snd.c_str()); //Parse payload to char array
   //Serial.println("Message to server:\t"+payload);
           
-  //Serial.println(tcp_payload);
+  Serial.println(tcp_snd);
           
   //thingspeak_command = ("GET /update?api_key="+WriteAPIKey+"&field1="+rpm+"&field2="+veloc+"    HTTP/1.0\r\n\r\n");
   //Serial.println("command="+thingspeak_command);
   //char* http_cmd = const_cast<char*>(thingspeak_command.c_str()); //Parse command to char array
 
-  if(0 == gprs.sendTCPData(tcp_payload)){
+  if(0 == gprs.sendTCPData(tcp_snd)){
     //gprs.serialDebug();
     //char fin_get[] = "CLOSED\n";
     //gprs.waitForResp(fin_get,5);
