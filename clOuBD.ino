@@ -53,7 +53,6 @@ byte    inData;                   //to parse data received from OBD
 char    inChar;                   //to read OBD's response char-wise
 String  WorkingString="";         //to cut substrings from raw_ELM327_response
 String  fdig;                     //to cut DTC code first digit
-//String  dummy;
 long    A;                        //to save numeric data gotten from control unit's responses
 long    B;
 
@@ -89,7 +88,7 @@ int vtemp[10];                // temporary array for speed
 int ntemp[10];                // temporary array for rpm
 int ctemp[5];                 // temporary array for temperature
 int btemp[5];                 // temporary array for voltage
-unsigned long tsnd[lines];    // time array to send
+unsigned long tsnd;    // time array to send
 int vsnd[lines];              // speed array to send
 int nsnd[lines];              // rpm array to send
 //int vraw[lines];              // raw speed array 
@@ -105,6 +104,9 @@ String pid2[]={"0105", "at rv"};
  ******** SIM and Cloud Variables ********
  *****************************************/
 
+String snd = "";
+
+/*
 String payload = "";
 String DTCnd = "";
 String V = "";
@@ -113,6 +115,7 @@ String T = "";
 String D = "";
 String C = "";
 String Bat = "";
+*/
 
 #define DEFAULT_TIMEOUT     5
 char server[] = "REPLACE_WHEN_LOADING_TO_ARDUINO";     //Server's address
@@ -205,7 +208,7 @@ void setup() {
   break;
   }
   }
-  Serial.print("Set protocol: "); Serial.println(raw_ELM327_response); 
+  //Serial.print("Set protocol: "); Serial.println(raw_ELM327_response); 
 
   //Number of DTC codes                                     Try 0101 in terminal and see (if) different responses
 
@@ -226,8 +229,8 @@ void setup() {
     }
   }//while
   //ndtc=3; //Test
-  Serial.print("Number of DTCs: "); Serial.println(ndtc); 
-  DTCnd+="Num DTCs: "+String(ndtc);
+  //Serial.print("Number of DTCs: "); Serial.println(ndtc); 
+  snd+="Num DTCs: "+String(ndtc);
 
   //Get DTC codes  
   if(ndtc>0){
@@ -239,7 +242,7 @@ void setup() {
     //Serial.print("DTC: ");Serial.println(raw_ELM327_response); //Raw response
     //Get code from look up table
 
-      Serial.print("\n");
+      //Serial.print("\n");
       for(i = 9; i <= (ndtc*6+3); i = i+6){                  //Go through every first code digit in ISO 15765-4 CAN (11/500)
       //for(i = 6; i <= (ndtc*6); i = i+6){
       WorkingString = raw_ELM327_response.substring(i,(i+1));    //Cut first digit 
@@ -297,9 +300,9 @@ void setup() {
         }
       WorkingString = fdig + raw_ELM327_response.substring((i+1),(i+2)) + raw_ELM327_response.substring((i+3),(i+5));
       //WorkingString = fdig + resp.substring((i+1),(i+2)) + resp.substring((i+3),(i+5));         //Test
-      DTCnd+="\t"+WorkingString;
+      snd+="\t"+WorkingString;
       }//for
-  /*
+  
   //SEND DTCs
   BTOBD_serial.end();  
   
@@ -312,11 +315,10 @@ void setup() {
   else{
       //Serial.println("connect error");
   }
-  payload = DTCnd;
-  char* tcp_payload = const_cast<char*>(payload.c_str()); //Parse payload to char array
-  Serial.println("Message to server=\n"+payload);
+  char* tcp_snd = const_cast<char*>(snd.c_str()); //Parse payload to char array
+  //Serial.println(tcp_snd);
 
-  if(0 == gprs.sendTCPData(tcp_payload)){
+  if(0 == gprs.sendTCPData(tcp_snd)){
     //gprs.serialDebug();
     //char fin_get[] = "CLOSED\n";
     //gprs.waitForResp(fin_get,5);
@@ -331,31 +333,10 @@ void setup() {
   BTOBD_serial.begin(baud_serial2);
   */
           
-  //Show DTCs stored in array -> Json -> Send
-  /*
-  //Create json object
-  StaticJsonBuffer<100> jsonBuffer; //Check size
-  JsonObject& root = jsonBuffer.createObject();
-  //JsonArray& codes = root.createNestedArray("codes");
-  
-  for(int i=0; i<ndtc; i++){
-  /*Serial.print(DTC[i]); Serial.print(";");
-  delay(1);
-  codes.add(DTC[i]);
-
-  dummy="code "+String(i+1);
-  JsonObject& code = root.createNestedObject(dummy);
-  //code["TN"]= "DataOBD";
-  code["DTC"]=DTC[i];
-  }
-  
-  Serial.print("\n");
-  root.prettyPrintTo(Serial); //****(TO SEND)****
-  Serial.print("\n");
-  */
+ 
   }//if
 
-Serial.println(DTCnd); //(->DELETE!) 
+//Serial.println(snd); //(->DELETE!) 
         
 } // end set up
 
@@ -369,9 +350,11 @@ void loop(){
   //ELM327_enter_terminal_mode();       //Un-comment to access terminal mode for ELM327
   //gprs.serialDebug();                 //Un-comment to access terminal mode for SIM800L
 
+  snd="";
+        
   timestamp = millis();   //Register initial timestamp
-  Serial.print("\n");     //Start new line (do not use println in any print of the loop)
-  Serial.print(timestamp); 
+  //Serial.print("\n");     //Start new line (do not use println in any print of the loop)
+  //Serial.print(timestamp); 
   //Serial.print("\t[ms]\t");
 
 /***************************************
@@ -415,6 +398,8 @@ void loop(){
   delay(time_response);                                    //Wait for the ELM327 to acquire
   read_elm327_response();                                  //Read ELM327's response
   
+  if(m==lines-10){
+          
   if(j==0){
 
   //Coolant temperature
@@ -432,8 +417,10 @@ void loop(){
   l++;
   }
   //Serial.print(var); Serial.print(u2[j]);
-  
-  tsnd[m]=int(timestamp/1000)-1; //get timestamp every 1 sec    
+  }//if
+  if(m==o){      
+  tsnd=int(timestamp/1000)-1; //get timestamp every 1 sec    
+  }
   m++;
        
   k++;
@@ -444,12 +431,13 @@ void loop(){
   }  
   
   if(k==10){ //Filled temporary array, filter, transfer to array to send and reset
-    
+    /*
     for(i=0; i<10; i++){
     vraw[(10*p+i)]=vtemp[i];
     nraw[(10*p+i)]=ntemp[i];
     }
-  
+    */
+          
     //SPIKES
     //SPEED Analizing bv (last element in last array)
     if(((av-bv)>dv && (vtemp[0]-bv)>dv) || ((bv-av)>dv && (bv-vtemp[0])>dv)){
@@ -576,24 +564,23 @@ void loop(){
   }//if
   
   if(m==(lines)){       //Filled array in all positions 0 to lines-1 -> write Json -> Send
-  T = "\tT\t";
+  
+  snd += "\tT\t" + String(tsnd);
+
+  snd += "\tV\t";
   for(i=0; i<(lines); i++){
-      T += String(tsnd[i]) + " "; 
+      snd += String(vsnd[i]) + " ";
   }
-  V = "\tV\t";
+  snd += "\tN\t";
   for(i=0; i<(lines); i++){
-      V += String(vsnd[i]) + " ";
-  }
-  N = "\tN\t";
-  for(i=0; i<(lines); i++){
-      N += String(nsnd[i]) + " "; 
+      snd += String(nsnd[i]) + " "; 
   }
   for(i=1; i<(lines); i++){
       dsnd=dsnd+(((float(vsnd[i])+float(vsnd[i-1]))/7200)*100000); //multplied by 100000 (sent in cm)
   }
-  D = "\tD\t"+String(dsnd);
-  C = "\tC\t"+String(csnd);        
-  Bat = "\tB\t"+String(bsnd); 
+  snd += "\tD\t" + String(dsnd);
+  snd += "\tC\t" + String(csnd);        
+  snd += "\tB\t" + String(bsnd); 
           
   m=0;            //Reset position for re-fill time array
    
@@ -612,9 +599,12 @@ void loop(){
   else{
       //Serial.println("connect error");
   }
-  payload = T+V+N+D+C+Bat;
-  char* tcp_payload = const_cast<char*>(payload.c_str()); //Parse payload to char array
-  Serial.println("Message to server:\t"+payload);
+
+  //char* tcp_payload = const_cast<char*>(payload.c_str()); //Parse payload to char array
+  char* tcp_snd = const_cast<char*>(snd.c_str()); //Parse payload to char array
+  //Serial.println("Message to server:\t"+payload);
+          
+  //Serial.println(tcp_payload);
           
   //thingspeak_command = ("GET /update?api_key="+WriteAPIKey+"&field1="+rpm+"&field2="+veloc+"    HTTP/1.0\r\n\r\n");
   //Serial.println("command="+thingspeak_command);
