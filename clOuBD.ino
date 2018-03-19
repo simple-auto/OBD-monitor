@@ -69,7 +69,7 @@ uint8_t    k = 0;                  // Temporary Array element (Speed, RPM) for 1
 uint8_t    l = 0;                  // Temporary Array element (Coolant temperature, Battery voltage) for 5 var
 uint8_t    m = 0;                  // to fill arrays to send
 uint8_t    p = 0;                  // 10 element temporary array usage counter
-const uint8_t lines PROGMEM= 20;       // For array size, (lines/second)*(time betwen sendings)
+const uint8_t lines PROGMEM= 20;       // For array size, (lines/second)*(time between sendings)
 const uint8_t dv PROGMEM= 5;                 // for speed spike filter
 const uint16_t dn PROGMEM= 3000;               // for rpm spike filter
 const uint8_t dc PROGMEM= 10;                // for coolant temperature spike filter
@@ -156,7 +156,7 @@ void setup() {
   //SIM_serial.begin(baud_serial1);
   //gprs.serialDebug();
   
-Serial.print("freeMemory setup begining: ");
+Serial.print("freeMemory setup beginning: ");
 Serial.println(freeMemory());
         
   gprs.preInit();
