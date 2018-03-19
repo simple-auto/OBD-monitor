@@ -26,6 +26,7 @@
 
 #include <gprs.h>
 #include <SoftwareSerial.h>
+#include <MemoryFree.h>
 
 /*******************************
  ****** Runtime Variables ******
@@ -40,7 +41,7 @@ int           time_response       = 300;  //time to wait for response
 //#define baud_serial1 9600           //SIM
 #define baud_serial2 38400          //BT-OBD
 
-//SoftwareSerial SIM_serial(8,7);     //SIM
+SoftwareSerial SIM_serial(8,7);     //SIM
 SoftwareSerial BTOBD_serial(2,3);   //BT-OBD
 
 
@@ -76,10 +77,14 @@ const uint8_t dc PROGMEM= 10;                // for coolant temperature spike fi
 //const float a PROGMEM  = 0.3;               // for exponential filter
 //const float b PROGMEM = 1-a;
 
-uint8_t     av = 0;                 
-uint8_t      bv = 0;
-uint16_t     an = 0;
-uint16_t     bn = 0;                 // to save last two elements in temporary array, also defined as start point
+uint8_t     av = 120;
+//uint8_t     av = 0;                 
+uint8_t     bv = 120;
+//uint8_t     bv = 0;
+uint16_t     an = 5000;
+//uint8_t     an = 0;
+uint16_t     bn = 5000;                 // to save last two elements in temporary array, also defined as start point
+//uint8_t     bn = 0;                 // to save last two elements in temporary array, also defined as start point
 uint8_t      ac = 30;
 uint8_t      bc = 30;
 uint8_t      bb = 12;
@@ -151,6 +156,9 @@ void setup() {
   //SIM_serial.begin(baud_serial1);
   //gprs.serialDebug();
   
+Serial.print("freeMemory setup begining: ");
+Serial.println(freeMemory());
+        
   gprs.preInit();
   while(0 != gprs.init()) {
      delay(1000);
@@ -337,7 +345,9 @@ void setup() {
   }//if
 
 Serial.println(snd); //(->DELETE!) 
-        
+Serial.print("freeMemory after dtcs: ");
+Serial.println(freeMemory()); 
+       
 } // end set up
 
 void loop(){
@@ -379,8 +389,9 @@ void loop(){
   A = strtol(WorkingString.c_str(),NULL,16);            //Convert to integer
   var = A;                                              //Apply formula
   //Serial.print(var); Serial.print("\t[km/h]\t");        //Display value and unit (tabulated)
-  vtemp[k]=var;
-  
+  //vtemp[k]=var;
+  vtemp[k]=120;
+        
   //RPM    
   BTOBD_serial.println("010C");                         //Send sensor PID for RPM 
   delay(time_response);                                 //Wait for the ELM327 to acquire
@@ -391,8 +402,9 @@ void loop(){
   B = strtol(WorkingString.c_str(),NULL,16);            //Convert to integer    
   var = (256*A+B)/4;                                    //Apply formula
   //Serial.print(var); Serial.print("\t[RPM]\t");               //Display value and unit (tabulated)
-  ntemp[k]=var;
-
+  //ntemp[k]=var;
+  ntemp[k]=5000;
+        
   //2 sec
   BTOBD_serial.println(pid2[j]);                           //Send sensor PID for Coolant temp or battery voltage
   delay(time_response);                                    //Wait for the ELM327 to acquire
@@ -631,6 +643,10 @@ void loop(){
     delay(time_between_loops-time_elapsed);
   }
   }
+        
+Serial.print("freeMemory at loop end: ");
+Serial.println(freeMemory());
+         
 }//loop end
 
 
