@@ -60,44 +60,44 @@ long    B;
  ****** Car Variables *****
  **************************/
         
-int     ndtc;                   // Number of DTCs
+//int     ndtc;                   // Number of DTCs
 float   var;                    // elm327 response after equation
-int     i;                      // Used in for
-int     j = 0;                  // 2 sec variable selector
-int     k = 0;                  // Temporary Array element (Speed, RPM) for 10 var
-int     l = 0;                  // Temporary Array element (Coolant temperature, Battery voltage) for 5 var
-int     m = 0;                  // to fill arrays to send
-int     p = 0;                  // 10 element temporary array usage counter
-const int     lines = 30;       // For array size, (lines/second)*(time betwen sendings)
-int     dv = 5;                 // for speed spike filter
-int     dn = 3000;               // for rpm spike filter
-int     dc = 10;                // for coolant temperature spike filter
+uint8_t    i;                      // Used in for
+uint8_t    j = 0;                  // 2 sec variable selector
+uint8_t    k = 0;                  // Temporary Array element (Speed, RPM) for 10 var
+uint8_t    l = 0;                  // Temporary Array element (Coolant temperature, Battery voltage) for 5 var
+uint8_t    m = 0;                  // to fill arrays to send
+uint8_t    p = 0;                  // 10 element temporary array usage counter
+const uint8_t lines PROGMEM= 20;       // For array size, (lines/second)*(time betwen sendings)
+const uint8_t dv PROGMEM= 5;                 // for speed spike filter
+const uint16_t dn PROGMEM= 3000;               // for rpm spike filter
+const uint8_t dc PROGMEM= 10;                // for coolant temperature spike filter
 
-float   a  = 0.3;               // for exponential filter
-float   b  = 1-a;
+//const float a PROGMEM  = 0.3;               // for exponential filter
+//const float b PROGMEM = 1-a;
 
-int     av = 0;                 
-int     bv = 0;
-int     an = 0;
-int     bn = 0;                 // to save last two elements in temporary array, also defined as start point
-int     ac = 30;
-int     bc = 30;
-int     bb = 12;
+uint8_t     av = 0;                 
+uint8_t      bv = 0;
+uint16_t     an = 0;
+uint16_t     bn = 0;                 // to save last two elements in temporary array, also defined as start point
+uint8_t      ac = 30;
+uint8_t      bc = 30;
+uint8_t      bb = 12;
 
-int vtemp[10];                // temporary array for speed 
-int ntemp[10];                // temporary array for rpm
-int ctemp[5];                 // temporary array for temperature
-int btemp[5];                 // temporary array for voltage
+uint8_t vtemp[10];                // temporary array for speed 
+uint16_t ntemp[10];                // temporary array for rpm
+int16_t ctemp[5];                 // temporary array for temperature
+uint8_t btemp[5];                 // temporary array for voltage
 unsigned long tsnd;    // time array to send
-int vsnd[lines];              // speed array to send
-int nsnd[lines];              // rpm array to send
+uint8_t vsnd[lines];              // speed array to send
+uint16_t nsnd[lines];              // rpm array to send
 //int vraw[lines];              // raw speed array 
 //int nraw[lines];              // raw rpm array 
-int csnd;                     // coolant temperature to send
-int bsnd;                     // battery voltage to send
+int16_t csnd;                     // coolant temperature to send
+uint8_t bsnd;                     // battery voltage to send
 unsigned long dsnd = 0;       // trip distance to send in cm
 
-String pid2[]={"0105", "at rv"};
+const String pid2[] PROGMEM={"0105", "at rv"};
 //String u2[]={"\t[Celsius]\t", "\t[V]\t"};
 
 /*****************************************
@@ -218,22 +218,22 @@ void setup() {
   read_elm327_response(); 
     WorkingString = raw_ELM327_response.substring(11,13);   //Cut A Byte value
   A = strtol(WorkingString.c_str(),NULL,16);              //Convert to integer
-  ndtc = A-128;                                           //Apply formula
-    if(ndtc==-128 && raw_ELM327_response.substring(11,13)!="IT"){ //CHECK IN TERMINAL FOR ISO 15765-4
-    //if(ndtc==-128 && raw_ELM327_response.substring(11,13)=="00"){ //CHECK IN TERMINAL
-      ndtc=0; 
+  var = A-128;                                           //Apply formula
+    if(var==-128 && raw_ELM327_response.substring(11,13)!="IT"){ //CHECK IN TERMINAL FOR ISO 15765-4
+    //if(var==-128 && raw_ELM327_response.substring(11,13)=="00"){ //CHECK IN TERMINAL
+      var=0; 
       break;
     }
-    else if(ndtc>0){
+    else if(var>0){
       break;
     }
   }//while
   //ndtc=3; //Test
   //Serial.print("Number of DTCs: "); Serial.println(ndtc); 
-  snd+="Num DTCs: "+String(ndtc);
+  snd+="Num DTCs: "+String(var);
 
   //Get DTC codes  
-  if(ndtc>0){
+  if(var>0){
     BTOBD_serial.println("03");           //Request Mode 03 (List of DTCs)
     delay(5000); 
     read_elm327_response();  //Check delay
@@ -243,8 +243,8 @@ void setup() {
     //Get code from look up table
 
       //Serial.print("\n");
-      for(i = 9; i <= (ndtc*6+3); i = i+6){                  //Go through every first code digit in ISO 15765-4 CAN (11/500)
-      //for(i = 6; i <= (ndtc*6); i = i+6){
+      for(i = 9; i <= (var*6+3); i = i+6){                  //Go through every first code digit in ISO 15765-4 CAN (11/500)
+      //for(i = 6; i <= (var*6); i = i+6){
       WorkingString = raw_ELM327_response.substring(i,(i+1));    //Cut first digit 
       
       //String resp = ">0343 xx 01 33 C0 00 50 00 01 33 C0 00 50 00"; //Test response Add xx in first byte position for ISO 15765-4
@@ -398,7 +398,7 @@ void loop(){
   delay(time_response);                                    //Wait for the ELM327 to acquire
   read_elm327_response();                                  //Read ELM327's response
   
-  if(m==lines-10){
+  if(m>=lines-10){
           
   if(j==0){
 
@@ -408,7 +408,7 @@ void loop(){
   var = A-40;
   ctemp[l] = var;
   }
-  else if(j==1){
+  else{
     
   //Voltage
   WorkingString = raw_ELM327_response.substring(6,10); //Cut voltage value 
@@ -496,7 +496,7 @@ void loop(){
     vsnd[10*p]=bv;
     nsnd[10*p]=bn;
     for(i=1; i<10; i++){
-    vsnd[(10*p+i)]=a*vsnd[(10*p+i-1)]+b*vtemp[i-1];  // Exponential filter
+    vsnd[(10*p+i)]=0.3*float(vsnd[(10*p+i-1)])+0.7*float(vtemp[i-1]);  // Exponential filter
     //nsnd[(10*p+i)]=a*nsnd[(10*p+i-1)]+b*ntemp[i-1];  //DO NOT USE EXPONENTIAL FILTER IN RPM
     nsnd[(10*p+i)]=ntemp[i-1];
     }
@@ -509,7 +509,7 @@ void loop(){
     k=0;
   
     p++;
-    if(p==3){ //=lines/(temporary array size)
+    if(p==2){ //=lines/(temporary array size)
     p=0;
     }   
   
@@ -563,7 +563,7 @@ void loop(){
     
   }//if
   
-  if(m==(lines)){       //Filled array in all positions 0 to lines-1 -> write Json -> Send
+  if(m==lines){       //Filled array in all positions 0 to lines-1 -> write Json -> Send
   
   snd += "\tT\t" + String(tsnd);
 
