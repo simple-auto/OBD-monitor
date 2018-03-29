@@ -24,7 +24,7 @@
  ****** Libraries ******
  ***********************/
 
-#include <gprs.h>
+//#include <gprs.h>
 #include <SoftwareSerial.h>
 #include <MemoryFree.h>
 
@@ -122,6 +122,7 @@ String C = "";
 String Bat = "";
 */
 
+/*
 #define DEFAULT_TIMEOUT     5
 char server[] = "REPLACE_WHEN_LOADING_TO_ARDUINO";     //Server's address
 int port = 00; //REPLACE WHEN LOADING TO ARDUINO
@@ -158,7 +159,7 @@ void setup() {
   
 Serial.print("freeMemory setup beginning: ");
 Serial.println(freeMemory());
-        
+/*
   gprs.preInit();
   while(0 != gprs.init()) {
      delay(1000);
@@ -310,7 +311,7 @@ Serial.println(freeMemory());
       //WorkingString = fdig + resp.substring((i+1),(i+2)) + resp.substring((i+3),(i+5));         //Test
       snd+="\t"+WorkingString;
       }//for
-  
+  /*
   //SEND DTCs
   BTOBD_serial.end();  
   
@@ -339,7 +340,7 @@ Serial.println(freeMemory());
   gprs.serialSIM800.end();
   delay(1000);
   BTOBD_serial.begin(baud_serial2);
-
+*/
           
  
   }//if
@@ -600,6 +601,8 @@ void loop(){
   /************************************
    ****** Send data to the cloud ******
    ************************************/
+/*
+   
   BTOBD_serial.end();  
   
   GPRS gprs;
@@ -612,11 +615,15 @@ void loop(){
       //Serial.println("connect error");
   }
 
+*/
+
   //char* tcp_payload = const_cast<char*>(payload.c_str()); //Parse payload to char array
   char* tcp_snd = const_cast<char*>(snd.c_str()); //Parse payload to char array
   //Serial.println("Message to server:\t"+payload);
           
   Serial.println(tcp_snd);
+
+/*
           
   //thingspeak_command = ("GET /update?api_key="+WriteAPIKey+"&field1="+rpm+"&field2="+veloc+"    HTTP/1.0\r\n\r\n");
   //Serial.println("command="+thingspeak_command);
@@ -635,6 +642,9 @@ void loop(){
   gprs.serialSIM800.end();
   delay(1000);
   BTOBD_serial.begin(baud_serial2);
+
+*/
+  
   }//if
         
   else{
