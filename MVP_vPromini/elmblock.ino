@@ -33,12 +33,14 @@
 unsigned long timestamp           = 0;    //to measure time elapsed getting OBD data
 unsigned long time_elapsed        = 0;    //to measure time elapsed getting OBD data
 int           time_between_loops  = 1000; //total time elapsed on each iteration in [ms]
-int           time_response       = 300;  //time to wait for response
+int           time_response       = 250;  //time to wait for response
 
 #define baud_serial0 9600           //Serial inncluded in arduino
-#define baud_serial2 38400          //BT-OBD
+//#define baud_serial2 38400          //BT-OBD
+#define baud_serial2 9600          //BT-OBD   ¡DOUBLE CHECK THIS!
 
-SoftwareSerial BTOBD_serial(2,3);   //BT-OBD
+//SoftwareSerial BTOBD_serial(2,3);   //BT-OBD
+SoftwareSerial senderSerial(3,4); // Pro mini sender RX TX
 
 
 /********************************
@@ -50,22 +52,21 @@ byte    inData;                   //to parse data received from OBD
 char    inChar;                   //to read OBD's response char-wise
 String  WorkingString="";         //to cut substrings from raw_ELM327_response
 String  fdig;                     //to cut DTC code first digit
-long    A;                        //to save numeric data gotten from control unit's responses
-long    B;
+uint8_t    A;                     //to save numeric data gotten from control unit's responses
+uint8_t    B;
 
 /**************************
  ****** Car Variables *****
  **************************/
         
-//int     ndtc;                   // Number of DTCs
-float   var;                    // elm327 response after equation
+float      var;                    // elm327 response after equation
 uint8_t    i;                      // Used in for
 uint8_t    j = 0;                  // 2 sec variable selector
 uint8_t    k = 0;                  // Temporary Array element (Speed, RPM) for 10 var
 uint8_t    l = 0;                  // Temporary Array element (Coolant temperature, Battery voltage) for 5 var
 uint8_t    m = 0;                  // to fill arrays to send
 uint8_t    p = 0;                  // 10 element temporary array usage counter
-uint8_t		 num = 1;								 // firstdata package
+uint8_t     num = 1;                // firstdata package
 const uint8_t lines PROGMEM= 30;       // For array size, (lines/second)*(time between sendings)
 const uint8_t dv PROGMEM= 5;                 // for speed spike filter
 const uint16_t dn PROGMEM= 3000;               // for rpm spike filter
@@ -74,13 +75,13 @@ const uint8_t dc PROGMEM= 10;                // for coolant temperature spike fi
 const float a PROGMEM  = 0.3;               // for exponential filter
 const float b PROGMEM = 1-a;
 
-uint8_t     av;                 
-uint8_t     bv;
+uint8_t      av;                 
+uint8_t      bv;
 uint16_t     an;
 uint16_t     bn;                 // to save last two elements in temporary array, also defined as start point
 uint8_t      ac = 30;
 uint8_t      bc = 30;
-uint8_t      bb = 12;
+uint8_t      bb = 120;
 
 uint8_t vtemp[10];                // temporary array for speed 
 uint16_t ntemp[10];                // temporary array for rpm
@@ -99,7 +100,7 @@ const String pid2[] PROGMEM={"0105", "at rv"};
  ******** SIM and Cloud Variables ********
  *****************************************/
 
-String snd = "";
+String snd;
 
 void setup() {
   /*****************************************
@@ -107,15 +108,18 @@ void setup() {
    ****************  SETUP  ****************
    *****************************************
    *****************************************/
+
+  snd = "";
   
   /*** Begin serial: */
-  Serial.begin(baud_serial0);       
+  Serial.begin(baud_serial2);  // BLUETOOTH     
   //Serial.println("Initializing Cloud Car Monitor System");
+  senderSerial.begin(baud_serial0); // Serial to the other Pro mini
   
  /******************************
  *** Initialize Bluetooth HC 05
  ******************************/  
-  BTOBD_serial.begin(baud_serial2);
+  //BTOBD_serial.begin(baud_serial2);
   //Serial.println("Bluetooth communication to ELM327 Initialized");
   
   //ELM327_enter_terminal_mode();
@@ -123,11 +127,12 @@ void setup() {
  /*********************
  *** Initialize ELM327
  *********************/  
+  delay(2000);
  
   //Start 
   
   while(true){
-    BTOBD_serial.println("atz");
+    Serial.println("atz");
     delay(2000);
     read_elm327_response();
     if(raw_ELM327_response.substring(4,5)!="?"){
@@ -137,7 +142,7 @@ void setup() {
   //Serial.print("Reset: "); Serial.println(raw_ELM327_response); 
 
   while(true){
-    BTOBD_serial.println("at sp 6"); //Protocol n°6: ISO 15765-4 CAN (11/500)
+    Serial.println("at sp 6"); //Protocol n°6: ISO 15765-4 CAN (11/500)
     delay(2000);
     read_elm327_response();
     if(raw_ELM327_response.substring(8,9)!="?"){
@@ -149,7 +154,7 @@ void setup() {
   //Number of DTC codes                                     Try 0101 in terminal and see (if) different responses
 
   while(true){
-    BTOBD_serial.println("0101");
+    Serial.println("0101");
     delay(1000); 
     read_elm327_response(); 
     WorkingString = raw_ELM327_response.substring(11,13);   //Cut A Byte value
@@ -166,11 +171,17 @@ void setup() {
   }//while
   //ndtc=3; //Test
   //Serial.print("Number of DTCs: "); Serial.println(ndtc); 
-  snd+=String(var)+" DTC";
+  B=var;
+  if(B<10){
+    snd+= "00" + String(B); //ANN
+  }
+  else{
+    snd+= "0" + String(B); //ANN
+  }
 
   //Get DTC codes  
   if(var>0){
-    BTOBD_serial.println("03");           //Request Mode 03 (List of DTCs)
+    Serial.println("03");           //Request Mode 03 (List of DTCs)
     delay(5000); 
     read_elm327_response();  //Check delay
     //delay(7000); 
@@ -236,19 +247,25 @@ void setup() {
         }
       WorkingString = fdig + raw_ELM327_response.substring((i+1),(i+2)) + raw_ELM327_response.substring((i+3),(i+5));
       //WorkingString = fdig + resp.substring((i+1),(i+2)) + resp.substring((i+3),(i+5));         //Test
-      snd+=" "+WorkingString;
+      snd+=WorkingString;
       }//for
  
   }//if DTCs>0
 
 
 //************Make string and give it to promini_sender   
-//Serial.println(snd); //(->DELETE!) 
   
 char* data = const_cast<char*>(snd.c_str()); //Parse payload to char array
-Serial.println(data); //(->DELETE!) 
+senderSerial.println(data); 
+delay(1000);
+//Serial.println(data);
+//senderSerial.flush();
+/*
+    digitalWrite(5,HIGH);
+    delay(5);
+    digitalWrite(5,LOW);
+*/    
 
-  
 } // end set up
 
 void loop(){
@@ -280,17 +297,17 @@ void loop(){
   //1 sec
   
   //Speed
-  BTOBD_serial.println("010D");                         //Send sensor PID for speed 
+  Serial.println("010D");                         //Send sensor PID for speed 
   delay(time_response);                                 //Wait for the ELM327 to acquire
   read_elm327_response();                               //Read ELM327's response              
   WorkingString = raw_ELM327_response.substring(11,13); //Cut A Byte value
   A = strtol(WorkingString.c_str(),NULL,16);            //Convert to integer
   var = A;                                              //Apply formula
   //vtemp[k]=var;
-  vtemp[k]=120;
+  vtemp[k]=8;
         
   //RPM    
-  BTOBD_serial.println("010C");                         //Send sensor PID for RPM 
+  Serial.println("010C");                         //Send sensor PID for RPM 
   delay(time_response);                                 //Wait for the ELM327 to acquire
   read_elm327_response();                               //Read ELM327's response                      
   WorkingString = raw_ELM327_response.substring(11,13); //Cut A Byte value
@@ -298,11 +315,11 @@ void loop(){
   WorkingString = raw_ELM327_response.substring(14,16); //Cut B Byte value  
   B = strtol(WorkingString.c_str(),NULL,16);            //Convert to integer    
   var = (256*A+B)/4;                                    //Apply formula
-  //ntemp[k]=var;
-  ntemp[k]=5000;
+  //ntemp[k]=var/10;
+  ntemp[k]=70;
         
   //2 sec
-  BTOBD_serial.println(pid2[j]);                           //Send sensor PID for Coolant temp or battery voltage
+  Serial.println(pid2[j]);                           //Send sensor PID for Coolant temp or battery voltage
   delay(time_response);                                    //Wait for the ELM327 to acquire
   read_elm327_response();                                  //Read ELM327's response
   
@@ -315,16 +332,17 @@ void loop(){
       A = strtol(WorkingString.c_str(),NULL,16);            //Convert to integer
       var = A-40;
       ctemp[l] = var;
-      }
-      else{
+    }
+    else{
     
       //Voltage
       WorkingString = raw_ELM327_response.substring(6,10); //Cut voltage value 
       var = WorkingString.toFloat();
       btemp[l]= var*10;
       l++;
-      }
+    }
   }//if
+  
   if(m==0){      
     tsnd=int(timestamp/1000)-1; //get timestamp every 1 sec    
   }
@@ -341,23 +359,23 @@ void loop(){
      
     //SPIKES
     if(num == 0){
-    	//SPEED Analizing bv (last element in last array)
-    	if(((av-bv)>dv && (vtemp[0]-bv)>dv) || ((bv-av)>dv && (bv-vtemp[0])>dv)){
-      	bv=(vtemp[0]+av)/2;
-    	}
-    	//Analizing first element
-    	if(((bv-vtemp[0])>dv && (vtemp[1]-vtemp[0])>dv) || ((vtemp[0]-bv)>dv && (vtemp[0]-vtemp[1])>dv)){
-      	vtemp[0]=(vtemp[1]+bv)/2;  
-    	}
+      //SPEED Analizing bv (last element in last array)
+      if(((av-bv)>dv && (vtemp[0]-bv)>dv) || ((bv-av)>dv && (bv-vtemp[0])>dv)){
+        bv=(vtemp[0]+av)/2;
+      }
+      //Analizing first element
+      if(((bv-vtemp[0])>dv && (vtemp[1]-vtemp[0])>dv) || ((vtemp[0]-bv)>dv && (vtemp[0]-vtemp[1])>dv)){
+        vtemp[0]=(vtemp[1]+bv)/2;  
+      }
     
-    	//RPM Analizing bn (last element in last array)
-    	if(((an-bn)>dn && (ntemp[0]-bn)>dn) || ((bn-an)>dn && (bn-ntemp[0])>dn)){
-      	bn=(ntemp[0]+an)/2;
-    	}
-    	//Analizing first element
-    	if(((bn-ntemp[0])>dn && (ntemp[1]-ntemp[0])>dn) || ((ntemp[0]-bn)>dn && (ntemp[0]-ntemp[1])>dn)){
-      	ntemp[0]=(ntemp[1]+bn)/2;  
-    	}
+      //RPM Analizing bn (last element in last array)
+      if(((an-bn)>dn && (ntemp[0]-bn)>dn) || ((bn-an)>dn && (bn-ntemp[0])>dn)){
+        bn=(ntemp[0]+an)/2;
+      }
+      //Analizing first element
+      if(((bn-ntemp[0])>dn && (ntemp[1]-ntemp[0])>dn) || ((ntemp[0]-bn)>dn && (ntemp[0]-ntemp[1])>dn)){
+        ntemp[0]=(ntemp[1]+bn)/2;  
+      }
     }//if num = 0 -> NOT first data package
     
     //Spike Filter rest of the SPEED and RPM array
@@ -397,13 +415,13 @@ void loop(){
     }//for
     
     //Fill array to SEND
-		if(num == 0){ // -> not first data package
+    if(num == 0){ // -> not first data package
       vsnd[10*p]=bv;
-    	nsnd[10*p]=bn;
+      nsnd[10*p]=bn;
     }
-    else{
+    else{ //-> first data package
       vsnd[10*p]=vtemp[0];
-    	nsnd[10*p]=ntemp[0];      
+      nsnd[10*p]=ntemp[0];      
     }
     
     for(i=1; i<10; i++){
@@ -412,7 +430,7 @@ void loop(){
       nsnd[(10*p+i)]=ntemp[i-1];
     }
     
-  	av=vtemp[8]; 
+    av=vtemp[8]; 
     bv=vtemp[9];
     an=ntemp[8]; 
     bn=ntemp[9]; 
@@ -423,7 +441,7 @@ void loop(){
   
     p++;
     if(p==3){ //=lines/(temporary array size)
-    	p=0;
+      p=0;
     }   
   
   }//if
@@ -478,24 +496,56 @@ void loop(){
   
   if(m==lines){       //Filled array in all positions 0 to lines-1 -> write Json -> Send
 
-    snd += String(tsnd);
+    snd="1"; //type processed data
+    for(i=0; i<(lines); i++){
+      if(vsnd[i]<10){
+        snd += "00" + String(vsnd[i]);
+      }
+      else if(vsnd[i]<100){
+        snd += "0" + String(vsnd[i]);
+      }
+      else{
+        snd += String(vsnd[i]);
+      }
+    }
 
-    snd += ",V";
     for(i=0; i<(lines); i++){
-        snd += "," + String(vsnd[i]);
+      if(nsnd[i]<10){
+        snd += "00" + String(nsnd[i]); 
+      }
+      else if(nsnd[i]<100){
+        snd += "0" + String(nsnd[i]);
+      }
+      else{
+        snd += String(nsnd[i]);
+      }
     }
-    snd += ",N";
-    for(i=0; i<(lines); i++){
-        snd += "," + String(nsnd[i]); 
+//Coolant temperature
+    if(csnd<10){
+      snd += "00" + String(csnd);
     }
+    else if(csnd<100){
+      snd += "0" + String(csnd);
+    }
+    else{
+      snd += String(csnd);
+    }
+//Battery voltage
+    if(bsnd<100){
+      snd += "0" + String(bsnd);         
+    }
+    else{
+      snd += String(bsnd);
+    }
+//Time
+    snd += String(tsnd) + ",";
+    
     for(i=1; i<(lines); i++){
-        dsnd=dsnd+(((float(vsnd[i])+float(vsnd[i-1]))/7200)*100000); //multplied by 100000 (sent in cm)
+        dsnd=(((float(vsnd[i])+float(vsnd[i-1]))/7200.0)*1000.0); //multplied by 1000 (sent in m)
     }
-    snd += ",D," + String(dsnd);
-    snd += ",C," + String(csnd);        
-    snd += ",B," + String(bsnd); 
-    snd += "#";
-
+//Distance [m] (delta)
+    snd += String(dsnd);   
+    
     m=0;            //Reset position for re-fill time array
 
 
@@ -504,8 +554,15 @@ void loop(){
      ************************************/
 
     char* data = const_cast<char*>(snd.c_str()); //Parse payload to char array
-    Serial.println(data); //(->DELETE!) 
-
+    senderSerial.print(data);
+    //Serial.println(data); //(->DELETE!) 
+    //senderSerial.flush();
+    //Serial.flush();
+/*
+    digitalWrite(5,HIGH);
+    delay(5);
+    digitalWrite(5,LOW);
+*/    
   }//if
         
   else{
@@ -521,10 +578,10 @@ void loop(){
 
 void read_elm327_response(){
   raw_ELM327_response = "";
-  while (BTOBD_serial.available()>0){
+  while (Serial.available()>0){
     inData=0;
     inChar=0;
-    inData = BTOBD_serial.read();
+    inData = Serial.read();
     inChar=char(inData);
     raw_ELM327_response = raw_ELM327_response + inChar;
   } 
@@ -534,9 +591,9 @@ void read_elm327_response(){
 
 /*
 void ELM327_enter_terminal_mode(){
-  /**Debug HC05 Bluetooth and ELM327 OBD
-   * *  Captures serial2 data and writes input to it.
-  *
+  //*Debug HC05 Bluetooth and ELM327 OBD
+   // *  Captures serial2 data and writes input to it.
+  
   while(true){
     if (BTOBD_serial.available()){
       Serial.write(BTOBD_serial.read());
@@ -547,4 +604,3 @@ void ELM327_enter_terminal_mode(){
   }//while
 }//ELM327_enter_terminal_mode()
 */
-
