@@ -1,20 +1,18 @@
-=====================================================================
-=====================================================================
-=====================================================================
-== Data Transfer Protocol for Terralink Hardware to Innobec Server ==
-=====================================================================
-=====================================================(Draft #1)======
-=====================================================================
+ Data Transfer Protocol for Terralink Hardware to Innobec Server
+
+
 Revo Project,
 Terralink SpA, Chile
 revoproject@terralink.cl
 
-1) Server address
+Server address
 =================
+
 IP:TCP_Port
 
-2) Identification
+Identification
 =================
+
 IMEI (International Mobile Equipment Identifier)
 Structure:
 xx xx xx xx SS SS SS v
@@ -23,21 +21,29 @@ S = Serial Number (6 digit)
 v = verification number
 Devices will be identified by their 6-digit serial no.
 (Los dispositivos se identificarán por su número de serie de 6 dígitos.)
-3) Packets
-==========
+
+Packets
+========
+
 Types of packets
 ----------------
+
 0 = DTCs (Diagnostic Trouble Codes)
 1 = Preprocessed data (decimal)
 2 = Raw OBD data (Hexadecimal)
 3...9 Future Use
+
 Structure
 ---------
+
 SSSSSS A P...P \n (newline)
 S (6 digit) = Serial number
 A (1 digit) = Type of packet
-P (D digit) = PayloadType 0 Packet Structure
+P (D digit) = Payload
+
+Type 0 Packet Structure
 -----------------------
+
 (SSSSSS A=0 P) P = NN DDDDD_1 ... DDDDD_N
 N
 D_i
@@ -58,8 +64,10 @@ Number of DTCs = N = 3
 DTC 1 = D_1 = P0106
 DTC 2 = D_2 = P0104
 DTC 3 = D_3 = U1101
+
 Type 1 Packet Structure
 -----------------------
+
 (SSSSSS A=1 P) P = VVV_1 ... VVV_30 NNN_1 ... NNN_30 BBB CCC T...T, D...D
 V_i
 N_i
