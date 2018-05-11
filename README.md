@@ -1,15 +1,13 @@
 # OBD-monitor
 
-
 ## Introduction
-
-### Block Diagram
+Deveolpment of a hardware for car diagnostics and monitoring through app/web platform.
 
 ## Current Work
 
-### Hardware Development
-- Eagle Project
-- KiCAD Project
+### 1st Prototype to MVP
 
-- Gerber Files
-- Bill of Materials
+### Extend Features
+- SD Card
+- GPS
+- 3G Connectivity
