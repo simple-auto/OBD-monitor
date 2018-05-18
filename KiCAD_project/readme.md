@@ -1,7 +1,7 @@
 # KiCAD PCB Design
 
-##Schematic
+## Schematic
 
-##PCB
+## PCB
 
-##Gerbers
+## Gerbers
