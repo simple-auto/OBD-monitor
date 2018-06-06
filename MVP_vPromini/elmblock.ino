@@ -711,7 +711,7 @@ void loop(){
         //End Filter 999s
         }
         
-        if(vsnd[i]==666){
+        if(nsnd[i]==666){
           snd += "NaN";  
         }
         else{
