@@ -830,7 +830,6 @@ void loop(){
      }
      
      else{
-        pos="noGPS&";
         break;
      } 
      
