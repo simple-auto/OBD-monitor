@@ -53,8 +53,8 @@ SoftwareSerial SIM_serial(8,7);     //SIM800L
 SoftwareSerial readerSerial(3,2);   //Pro mini reader RX TX
 
 //TCP communications:
-char server[] = "52.13.248.109"; //"162.248.55.95";     //Server IP address
-int port = 2000; //9002; //REPLACE WHEN LOADING TO ARDUINO        //TCP port
+char server[] = "";     //Server IP address
+int port = 0; //9002; //REPLACE WHEN LOADING TO ARDUINO        //TCP port
 char data_to_send[512];                                 //Packet buffer
 uint32_t _ip;                                           //Local IP address
 char ip_string[20];
