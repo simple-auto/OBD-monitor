@@ -1,9 +1,11 @@
 /**
  * 
- * Updated ELMBlock 23/6/18
+ * Updated ELMBlock 02/07/18
+ * Arduino connected to Bluetooth and GPS
  * 
- * Always check SP [number] 
- * Bluetooth baud rate and
+ * Always check:
+ * Protocol number AT SP [number] 
+ * Bluetooth baud rate 
  * SenderSerial(rx,tx) pins
  * 
  * Cloud Car Monitor
