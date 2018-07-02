@@ -182,6 +182,7 @@ void loop(){
   //Connect to gprs service
 
   //get time
+  //AT+CLTS=1;&W must be set before to work
   sendCmd("AT+CCLK?\r\n");
   delay(1000);
   int j = 0;
