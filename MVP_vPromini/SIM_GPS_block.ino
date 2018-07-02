@@ -27,9 +27,8 @@
 /***********************
  ****** Libraries ******
  ***********************/
-#include <AltSoftSerial.h>
+
 #include <SoftwareSerial.h>
-#include <TinyGPS.h>
 
 /*******************************
  ****** Runtime Variables ******
@@ -39,42 +38,26 @@
 unsigned long timestamp           = 0;    //to measure time elapsed getting OBD data
 unsigned long time_elapsed        = 0;    //to measure time elapsed getting OBD data
 int           time_between_loops  = 30000; //total time elapsed on each iteration in
-
-//GPS variables
-long lat, lon;
-int alt;
-String pos;
-unsigned long age, date, time, chars = 0;
-int year;
-byte month, day, hour, minute, second, hundredths;
+//int           time_response       = 300;  //time to wait for response
 
 #define DEFAULT_TIMEOUT 5
 
 //Serial Communications:
 /*
 #define baud_SIM_serial     9600 
-#define baud_reader_serial  9600
-#define baud_gps_serial     9600 
+#define baud_reader_serial  9600 
 #define baud_debug_serial   9600
 */
-AltSoftSerial gpsSerial;
-//SoftwareSerial SIM_serial(2,3);     //SIM800L
-SoftwareSerial readerSerial(6,5);   //Pro mini reader RX TX
+SoftwareSerial SIM_serial(8,7);     //SIM800L
 
-TinyGPS gps; //create gps object
+SoftwareSerial readerSerial(3,2);   //Pro mini reader RX TX
 
 //TCP communications:
-////char server[] = "REPLACE_WHEN_LOADING_TO_ARDUINO";      //Server IP address
-////int port = 00; //REPLACE WHEN LOADING TO ARDUINO        //TCP port
-
+char server[] = "52.13.248.109"; //"162.248.55.95";     //Server IP address
+int port = 2000; //9002; //REPLACE WHEN LOADING TO ARDUINO        //TCP port
 char data_to_send[512];                                 //Packet buffer
-/*
 uint32_t _ip;                                           //Local IP address
 char ip_string[20];
-*/
-uint8_t k;                                                  //Message end locator
-
-  
 
 /*****************************************
  *****************************************
@@ -83,30 +66,28 @@ uint8_t k;                                                  //Message end locato
  *****************************************/
 
 void setup() {
-  Serial.begin(9600);
-  //SIM_serial.begin(9600);
-  readerSerial.begin(9600);
-  gpsSerial.begin(9600);
-
-  while (!Serial) {
-    ; // wait for serial port to connect. Needed for native USB port only
-  }
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, LOW);    // turn the LED off by making the voltage LOW
   
-  ////SIM_serial.listen();
-  //SIM_debug();  
+  SIM_serial.begin(9600);
+  readerSerial.begin(9600);
+  Serial.begin(9600);
+  
+  SIM_serial.listen();
+  SIM_debug();  
   
  /********************************
   ****** Initialize SIM800L ******
   ********************************/
-  /*
+  
   //+CFUN=1, +CPIN?
   while(0 != initialize()){delay(1000);}  delay(1000);
   //sendCmd("AT+CIPSTATUS\r\n"); delay(2000);
-*/  
+  
  /********************************
   ***** Replace APN Settings ***** 
   ********************************/
-/*
+
   //+CSTT
   //sendCmd("AT+CSTT=\"WAP.TMOVIL.CL\",\"WAP\",\"WAP\"\r\n");                  //Movistar (Chile)
   sendCmd("AT+CSTT=\"WEB.TMOVIL.CL\",\"WEB\",\"WEB\"\r\n");                    //Movistar (Chile)
@@ -117,7 +98,7 @@ void setup() {
   //+CGATT, +CREG
   //while(0 != sendCmdAndWaitForResp("AT+CGATT?\r\n","OK",DEFAULT_TIMEOUT)){delay(1000);}
   while(0 != networkCheck()){delay(1000);}
-  //Serial.println("Attached to GPRS network");
+  Serial.println("Attached to GPRS network");
 
   //+CIICR, +CIFSR
   sendCmdAndWaitForResp("AT+CIICR\r\n","OK",DEFAULT_TIMEOUT);
@@ -125,23 +106,24 @@ void setup() {
   sendCmd("AT+CIFSR\r\n");
   delay(1000);
 
-  //Serial.println("2G Initialized.");
-*/
+  Serial.println("2G Initialized.");
+
   /*******************************
    ****** Get Serial Number ****** 
    *******************************/
-/*
   while(SIM_serial.available()) {   // display the other thing..
       SIM_serial.read();
   }
+
   //+CGSN: Get serial number
   //Expected response: 865691035634435\n\nOK
   sendCmd("AT+CGSN\r\n");
   delay(2000);
+
   int i=0;
   while(1) {
     if(i>23)break;
-    if(SIM_serial.available()){
+    if(SIM_serial.available()) {
         char c = SIM_serial.read();
         if(i>=18){ 
           data_to_send[i-18] = c ;
@@ -158,26 +140,20 @@ void setup() {
   Serial.print("Serial Number = ");
   Serial.println(data_to_send);
   Serial.print("\n");
-
   // buffer:  char array
   // See communication protocol: https://github.com/simple-auto/OBD-monitor/blob/master/Protocol.md
-*/
-
-   //provisory id serial num
-   for(int i=0; i<6; i++){
-      data_to_send[i]='6';
-   }
-} //set up
+   
+   
+}
 
 void loop(){
-
   timestamp = millis();
   
   /*************************
    ****** Get Payload ******
    *************************/
 
-  //readerSerial.listen();
+  readerSerial.listen();
   Serial.println("Waiting for payload... ");
 
   int i = 6;
@@ -190,75 +166,40 @@ void loop(){
       data_to_send[i]=c;
       i++;
     }
-    if(c == '.'){ break;}
+    if(c == '&'){ 
+      data_to_send[i-1]=' ';
+      break;
+    }
     if(i>=510) break;
   }
-
-  //Serial.println(data_to_send);
-
-  /************************
-   ***** Add location****** 
-   ************************/
-   //gpsSerial.listen();
-   while(gpsSerial.available()){                    // check for gps data
-       //Serial.println("GPS IS available");
-       if(gps.encode(gpsSerial.read())){            // encode gps data
-        gps.get_position(&lat,&lon,&age);                // get latitude and longitude
-        alt=gps.f_altitude();
-
-        pos=String((float(lat)*0.000001),7)+","+String((float(lon)*0.000001),7)+","+String(alt)+",";
-        
-        gps.crack_datetime(&year, &month, &day, &hour, &minute, &second, &hundredths, &age);
-        if (age == TinyGPS::GPS_INVALID_AGE){
-        //    Serial.print("********** ******** ");
-          pos+="********** ******** ";
-        }
-        else
-        {
-          char sz[32];
-          sprintf(sz, "%02d/%02d/%02d %02d:%02d:%02d ",
-              day, month, year, hour, minute, second);
-          //Serial.print(sz);
-          //data=String(sz);
-          pos+=(sz);
-          //Serial.println(data);
-        }
-
-        //Serial.println(pos);
-        
-        delay(1000);
-        if(pos.length()>2){ //check this parameter
-          break;  
-        }
-        /* //Wait a reasonable time or declare no GPS signal.
-        else if(){
-                          
-        }
-        */
-       }//if gps
-   }// while gps
-
-//Add to packet
-
-  for(int j=0; j<=510; j++){
-    if(data_to_send[j]=='.'){
-      k=j;
-    }
-  }
-    
-  for(int a=0;a<pos.length();a++){
-    data_to_send[k+1] = pos.charAt(a);
-    k++;
-  } 
-
+ 
   /*************************
    ****** Send Packet ****** 
    *************************/
-  Serial.print("To send: ");
-  Serial.println(data_to_send); // -> delete / comment  
-//  SIM_serial.listen();  
+
+  
+  SIM_serial.listen();  
   //Connect to gprs service
-//  send_data_to_server(data_to_send);
+
+  //get time
+  sendCmd("AT+CCLK?\r\n");
+  delay(1000);
+  int j = 0;
+  while(1) {
+    if(j>35)break;
+    if(SIM_serial.available()) {
+        char c = SIM_serial.read();
+        if(j>=19){ 
+          data_to_send[i] = c ;
+          i++;
+        }
+    }
+    j++;
+  }
+
+  Serial.println(data_to_send); // -> delete / comment  
+  
+  send_data_to_server(data_to_send);
   
 
   /**************************
@@ -267,14 +208,14 @@ void loop(){
 
   if(true){
     //Buffer. erase trailer/tail of packet, preserve header/head
-    //Serial.println("Erasing buffer... ");
+    Serial.println("Erasing buffer... ");
     for(int i=6; i<510; i++){
       data_to_send[i] = '\0';
     }
-    //Serial.println(data_to_send); // -> delete / comment  
+    Serial.println(data_to_send); // -> delete / comment  
   }
   else{
-    //Serial.println("Failed to send. Retrying... ");
+    Serial.println("Failed to send. Retrying... ");
   }
   
 
@@ -295,19 +236,20 @@ void loop(){
  *****************************************
  *****************************************/
 
-/*
+
 void send_data_to_server(char* message_to_server){
 //void send_data_to_server(String message_to_server){
   /*
    * 
+
   message_to_server.replace("\n","");
   message_to_server.replace("\t","");
   message_to_server.replace("\r","");
   char* tcp_snd = const_cast<char*>(message_to_server.c_str()); //Parse payload to char array
   Serial.print("msg: ");
   Serial.println(tcp_snd);
+
   */
-/*  
   char* tcp_snd = message_to_server;
   if(0 == connectTCP(server, port)){
     Serial.print("\nConnect successfuly to: ");
@@ -320,7 +262,20 @@ void send_data_to_server(char* message_to_server){
     closeTCP(); 
     return;
   }
-  if(0 == sendTCPData(tcp_snd)){Serial.println("sent");}
+  if(0 == sendTCPData(tcp_snd)){
+    Serial.println("sent");
+    digitalWrite(LED_BUILTIN, HIGH);   // turn the LED on (HIGH is the voltage level)
+    delay(200);                       // wait for 200 ms
+    digitalWrite(LED_BUILTIN, LOW);    // turn the LED off by making the voltage LOW
+    delay(200);   
+    digitalWrite(LED_BUILTIN, HIGH);   // turn the LED on (HIGH is the voltage level)
+    delay(200);                       // wait for 200 ms
+    digitalWrite(LED_BUILTIN, LOW);    // turn the LED off by making the voltage LOW
+    delay(200);   
+    digitalWrite(LED_BUILTIN, HIGH);   // turn the LED on (HIGH is the voltage level)
+    delay(200);                       // wait for 200 ms
+    digitalWrite(LED_BUILTIN, LOW);    // turn the LED off by making the voltage LOW
+  }
   else{Serial.println("Not sent");}
   closeTCP();
   
@@ -358,7 +313,6 @@ void send_data_to_server(char* message_to_server){
  * THE SOFTWARE.
  */
 
-/*
   int waitForResp(const char *resp, unsigned int timeout)
 {
     int len = strlen(resp);
@@ -440,7 +394,6 @@ void SIM_debug(void)
         }
     }
 }
-
 
 void sendEndMark(void)
 {
@@ -597,4 +550,4 @@ int closeTCP(void)
     sendCmd("AT+CIPCLOSE\r\n");
     return 0;
 }
-*/
+
